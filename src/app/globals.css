@@ -1,0 +1,576 @@
+@import "tailwindcss";
+
+/* RealtorsIn brand tokens — sourced from mobile theme/tokens/palette.js */
+:root {
+  --background: #f5f7fa;
+  --foreground: #1e1e1e;
+  --card: #ffffff;
+  --card-foreground: #1e1e1e;
+  --popover: #ffffff;
+  --popover-foreground: #1e1e1e;
+  --primary: #0b9ce0;
+  --primary-foreground: #ffffff;
+  --secondary: #112f6b;
+  --secondary-foreground: #ffffff;
+  --muted: #f3f4f6;
+  --muted-foreground: #606060;
+  --accent: #d2ecff;
+  --accent-foreground: #052844;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --success: #059669;
+  --success-foreground: #ffffff;
+  --warning: #f59e0b;
+  --warning-foreground: #1e1e1e;
+  --border: #e5e7eb;
+  --input: #e5e7eb;
+  --ring: #0b9ce0;
+  --radius: 0.75rem;
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --font-sans:
+    var(--font-realtorsin-sans), ui-sans-serif, system-ui, sans-serif;
+  --duration-fast: 150ms;
+  --duration-normal: 220ms;
+  --shell-max: 70rem;
+  --shell-wide-max: 78rem;
+  /* LinkedIn-style equal side rails (feed + messaging suggestions). */
+  --rail-width: 18.75rem;
+  --left-rail-width: var(--rail-width);
+  --right-rail-width: var(--rail-width);
+  /* Neutral placeholders — no primary/accent tint (LinkedIn-style feed shimmer). */
+  --skeleton-from: #e4e9ef;
+  --skeleton-via: #eef1f5;
+  --skeleton-to: #e4e9ef;
+  --realtorsin-brand-gradient: linear-gradient(
+    135deg,
+    #e8e0f0 0%,
+    #dce8f8 25%,
+    #f0e6f6 50%,
+    #e0ecfa 75%,
+    #ede4f4 100%
+  );
+  --auth-surface: rgba(255, 255, 255, 0.55);
+  --auth-surface-border: rgba(255, 255, 255, 0.6);
+  --auth-surface-shadow: 0 8px 32px rgba(120, 100, 160, 0.08),
+    0 2px 8px rgba(120, 100, 160, 0.04);
+  --auth-input-bg: rgba(255, 255, 255, 0.5);
+  --auth-input-border: rgba(200, 190, 220, 0.35);
+  --auth-tabs-bg: rgba(255, 255, 255, 0.45);
+  --auth-tab-active-bg: rgba(255, 255, 255, 0.95);
+  --auth-tab-active-fg: var(--foreground);
+  --auth-tab-inactive-fg: color-mix(in srgb, var(--foreground) 65%, transparent);
+  --auth-inset-bg: rgba(255, 255, 255, 0.35);
+  --auth-inset-border: rgba(200, 190, 220, 0.3);
+  --auth-outline-bg: rgba(255, 255, 255, 0.45);
+  --auth-outline-border: rgba(200, 190, 220, 0.4);
+  --auth-accent-muted: #7c6bc4;
+  --auth-focus-border: rgba(124, 107, 196, 0.4);
+  --auth-focus-ring: rgba(124, 107, 196, 0.08);
+}
+
+.dark {
+  --background: #070c14;
+  --foreground: #f1f5f9;
+  --card: #0e1520;
+  --card-foreground: #f1f5f9;
+  --popover: #0e1520;
+  --popover-foreground: #f1f5f9;
+  --primary: #0b9ce0;
+  --primary-foreground: #ffffff;
+  --secondary: #3e7fbf;
+  --secondary-foreground: #ffffff;
+  --muted: #141c29;
+  --muted-foreground: #a8b6c8;
+  --accent: #12314b;
+  --accent-foreground: #e2e8f0;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --success: #34d399;
+  --success-foreground: #052e1c;
+  --warning: #fbbf24;
+  --warning-foreground: #1e1e1e;
+  --border: #1e2836;
+  --input: #1e2836;
+  --ring: #4db8ec;
+  --skeleton-from: #1a2433;
+  --skeleton-via: #243041;
+  --skeleton-to: #1a2433;
+  --realtorsin-brand-gradient: linear-gradient(
+    145deg,
+    #0c121c 0%,
+    #122035 35%,
+    #151d2e 70%,
+    #1a2438 100%
+  );
+  --auth-surface: color-mix(in srgb, var(--card) 82%, transparent);
+  --auth-surface-border: color-mix(in srgb, var(--border) 90%, transparent);
+  --auth-surface-shadow: 0 8px 32px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  --auth-input-bg: color-mix(in srgb, var(--muted) 70%, black 30%);
+  --auth-input-border: color-mix(in srgb, var(--border) 80%, white 12%);
+  --auth-tabs-bg: color-mix(in srgb, var(--muted) 75%, transparent);
+  --auth-tab-active-bg: color-mix(in srgb, var(--card) 92%, white 8%);
+  --auth-tab-active-fg: var(--foreground);
+  --auth-tab-inactive-fg: var(--muted-foreground);
+  --auth-inset-bg: color-mix(in srgb, var(--muted) 65%, black 15%);
+  --auth-inset-border: var(--border);
+  --auth-outline-bg: color-mix(in srgb, var(--muted) 45%, transparent);
+  --auth-outline-border: var(--border);
+  --auth-accent-muted: #b4a8e8;
+  --auth-focus-border: rgba(77, 184, 236, 0.5);
+  --auth-focus-ring: rgba(77, 184, 236, 0.18);
+}
+
+/* Admin-login style brand atmosphere (lavender / sky / soft pink) */
+.realtorsin-brand-gradient {
+  background: var(--realtorsin-brand-gradient);
+}
+
+.realtorsin-brand-blob {
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--primary) 45%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.realtorsin-brand-blob-pink {
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    rgba(240, 160, 200, 0.45) 0%,
+    transparent 70%
+  );
+}
+
+.realtorsin-brand-blob-purple {
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--secondary) 35%, transparent) 0%,
+    transparent 70%
+  );
+}
+
+.realtorsin-glass-panel {
+  border: 1px solid color-mix(in srgb, var(--card) 65%, transparent);
+  background: color-mix(in srgb, var(--card) 88%, transparent);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  box-shadow:
+    0 8px 32px color-mix(in srgb, var(--secondary) 6%, transparent),
+    0 1px 3px color-mix(in srgb, var(--secondary) 4%, transparent);
+}
+
+.dark .realtorsin-brand-blob,
+.dark .realtorsin-brand-blob-pink,
+.dark .realtorsin-brand-blob-purple {
+  opacity: 0.22;
+}
+
+.realtorsin-auth-card {
+  border: 1px solid var(--auth-surface-border);
+  background: var(--auth-surface);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  box-shadow: var(--auth-surface-shadow);
+  color: var(--foreground);
+}
+
+.auth-brand-subtitle {
+  color: var(--auth-accent-muted);
+}
+
+.auth-link {
+  color: var(--auth-accent-muted);
+  transition: color 0.2s ease;
+}
+
+.auth-link:hover {
+  color: var(--foreground);
+  text-decoration: underline;
+}
+
+.auth-field-input {
+  height: 50px;
+  border-radius: 0.75rem;
+  border: 1px solid var(--auth-input-border);
+  background: var(--auth-input-bg);
+  font-size: 0.875rem;
+  color: var(--foreground);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.auth-field-input::placeholder {
+  color: var(--muted-foreground);
+  opacity: 0.85;
+}
+
+.auth-field-input:focus-visible {
+  outline: none;
+  border-color: var(--auth-focus-border);
+  box-shadow:
+    0 0 0 3px var(--auth-focus-ring),
+    inset 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.auth-field-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.auth-submit-btn {
+  background: linear-gradient(
+    135deg,
+    #7c6bc4 0%,
+    #5a8dee 50%,
+    #48b5e4 100%
+  );
+  box-shadow:
+    0 4px 16px rgba(90, 141, 238, 0.3),
+    0 2px 4px rgba(90, 141, 238, 0.15);
+  cursor: pointer;
+}
+
+.auth-submit-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 6px 24px rgba(90, 141, 238, 0.4),
+    0 3px 6px rgba(90, 141, 238, 0.2);
+}
+
+.auth-submit-btn:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.auth-method-tabs {
+  height: auto;
+  gap: 0.25rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--auth-inset-border);
+  background: var(--auth-tabs-bg);
+  padding: 0.25rem;
+}
+
+.auth-method-tabs [role="tab"] {
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--auth-tab-inactive-fg);
+  box-shadow: none;
+  background: transparent !important;
+}
+
+.auth-method-tabs [role="tab"][data-state="active"] {
+  background: var(--auth-tab-active-bg) !important;
+  color: var(--auth-tab-active-fg) !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.dark .auth-method-tabs [role="tab"][data-state="active"] {
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.06) inset;
+}
+
+.auth-remember-checkbox {
+  accent-color: var(--auth-accent-muted);
+  border: 1px solid var(--border);
+  background: var(--auth-input-bg);
+}
+
+.auth-outline-btn {
+  display: flex;
+  height: 50px;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  border: 1px solid var(--auth-outline-border);
+  background: var(--auth-outline-bg);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--foreground);
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.auth-outline-btn:hover {
+  background: color-mix(in srgb, var(--auth-outline-bg) 70%, var(--card) 30%);
+  border-color: var(--auth-focus-border);
+}
+
+.auth-outline-btn:active {
+  transform: scale(0.98);
+}
+
+.auth-outline-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.auth-stats-panel {
+  border: 1px solid var(--auth-inset-border);
+  border-radius: 0.75rem;
+  background: var(--auth-inset-bg);
+}
+
+.auth-stats-panel dd {
+  color: var(--foreground);
+}
+
+.auth-stats-panel dt {
+  color: var(--muted-foreground);
+}
+
+.auth-slide-icon {
+  border: 1px solid var(--auth-inset-border);
+  background: var(--auth-inset-bg);
+}
+
+.auth-accent-text {
+  color: var(--auth-accent-muted);
+}
+
+.auth-progress-active {
+  background: var(--auth-accent-muted);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --font-sans: var(--font-sans);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Shell stays LTR; Arabic/Urdu/Persian copy uses .locale-text (see locale-document-sync). */
+html.locale-rtl .locale-text {
+  direction: rtl;
+  text-align: start;
+  unicode-bidi: isolate;
+}
+
+html.locale-rtl .locale-text .force-ltr,
+html.locale-rtl .locale-text [data-force-ltr="true"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: left;
+}
+
+/* Horizontal carousels (stories, suggestions) keep LTR scroll origin. */
+html.locale-rtl .locale-scroll-ltr {
+  direction: ltr;
+}
+
+/* Dialog actions: document stays LTR; mirror button order for RTL locales. */
+html.locale-rtl .locale-dialog-actions {
+  flex-direction: row-reverse;
+  justify-content: flex-start;
+}
+
+.shell-back-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.shell-back-row > .shell-back-link {
+  width: fit-content;
+  max-width: 100%;
+}
+
+/* Settings / sub-page back pill (html stays LTR; Tailwind rtl: variants do not apply). */
+html.locale-rtl .shell-back-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+html.locale-rtl .shell-back-row.justify-center {
+  justify-content: center;
+}
+
+html.locale-rtl .shell-back-link {
+  flex-direction: row-reverse;
+  padding-left: 1rem;
+  padding-right: 0.375rem;
+}
+
+html.locale-rtl .shell-back-link .locale-back-chevron svg {
+  transform: rotate(180deg);
+}
+
+html.locale-rtl .locale-settings-chevron {
+  transform: rotate(180deg);
+}
+
+/* Dialogs / sheets (document LTR; copy aligns under locale-rtl). */
+html.locale-rtl .locale-dialog-text {
+  direction: rtl;
+  text-align: start;
+  unicode-bidi: isolate;
+}
+
+html.locale-rtl .locale-chat-thread-header {
+  flex-direction: row-reverse;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--primary) 28%, transparent);
+}
+
+/* Focus rings live on UI primitives (Button, Input, etc.) — avoid doubling outline + ring. */
+a:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--ring) 65%, transparent);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+@keyframes skeleton-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-from) 0%,
+    var(--skeleton-via) 45%,
+    var(--skeleton-to) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.35s ease-in-out infinite;
+}
+
+@keyframes story-user-in-from-right {
+  from {
+    transform: translate3d(100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes story-user-in-from-left {
+  from {
+    transform: translate3d(-100%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes story-segment-in {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-story-user-from-right {
+  animation: story-user-in-from-right 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.animate-story-user-from-left {
+  animation: story-user-in-from-left 0.42s cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.animate-story-segment-in {
+  animation: story-segment-in 0.2s ease-out both;
+}
+
+/* react-easy-crop: Radix dialog uses transform — keep crop mask centered. */
+.profile-photo-crop-zone .reactEasyCrop_Container {
+  width: 100%;
+  height: 100%;
+}
+
+.profile-photo-crop-zone .reactEasyCrop_CropArea {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.profile-photo-crop-zone .reactEasyCrop_CropAreaRound {
+  border-radius: 50%;
+}
+
+@keyframes chat-message-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.chat-message-enter {
+  animation: chat-message-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.chat-thread-scroller {
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}

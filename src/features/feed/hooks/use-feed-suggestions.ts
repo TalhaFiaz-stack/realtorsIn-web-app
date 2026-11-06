@@ -1,0 +1,77 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchEventsPageRequest } from "@/features/events/services/events.client";
+import { fetchJobsPageRequest } from "@/features/jobs/services/jobs.client";
+import type { FeedSuggestionModuleData } from "@/features/feed/lib/merge-feed-with-suggestions";
+import {
+  fetchContactSuggestions,
+  fetchSuggestions,
+} from "@/features/network/services/network.client";
+
+export const feedSuggestionsQueryKey = ["feed", "suggestions"] as const;
+
+const EMPTY_BUNDLE: FeedSuggestionModuleData = {
+  contact_suggestions: [],
+  connection_suggestions: [],
+  job_suggestions: [],
+  event_suggestions: [],
+};
+
+export function useFeedSuggestions(enabled: boolean) {
+  const [geo, setGeo] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (!enabled || geo) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGeo({
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        });
+      },
+      () => {
+        /* job suggestions work without location */
+      },
+      { maximumAge: 600_000, timeout: 8_000 }
+    );
+  }, [enabled, geo]);
+
+  const query = useQuery({
+    queryKey: [...feedSuggestionsQueryKey, geo?.lat ?? "", geo?.lng ?? ""] as const,
+    enabled,
+    staleTime: 5 * 60_000,
+    queryFn: async ({ signal }) => {
+      const [contacts, connections, jobsPage, eventsPage] = await Promise.all([
+        fetchContactSuggestions(1, signal).catch(() => ({ people: [] })),
+        fetchSuggestions(1, signal).catch(() => ({ people: [] })),
+        fetchJobsPageRequest(
+          "discover",
+          1,
+          undefined,
+          signal,
+          geo ?? undefined
+        ).catch(() => ({ jobs: [] as never[] })),
+        fetchEventsPageRequest("upcoming", 1, {}, signal).catch(() => ({
+          events: [] as never[],
+        })),
+      ]);
+
+      return {
+        contact_suggestions: contacts.people ?? [],
+        connection_suggestions: connections.people ?? [],
+        job_suggestions: (jobsPage.jobs ?? []).slice(0, 8),
+        event_suggestions: (eventsPage.events ?? []).slice(0, 8),
+      } satisfies FeedSuggestionModuleData;
+    },
+  });
+
+  const bundle = useMemo(
+    () => query.data ?? EMPTY_BUNDLE,
+    [query.data]
+  );
+
+  return { bundle, isLoading: query.isLoading, refetch: query.refetch };
+}

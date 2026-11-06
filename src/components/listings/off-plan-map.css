@@ -1,0 +1,27 @@
+.off-plan-map-cluster {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a1a1a;
+  border: 3px solid #fff;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  color: #000;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.off-plan-map-cluster-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  background: #fff;
+  border-radius: 9999px;
+}
+
+.off-plan-map-leaflet .leaflet-container {
+  z-index: 0;
+  font-family: inherit;
+}

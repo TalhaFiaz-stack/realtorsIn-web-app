@@ -1,0 +1,17 @@
+/* Keep Leaflet layers inside the map card so they do not cover sticky app chrome. */
+.off-plan-detail-leaflet-map .leaflet-container {
+  z-index: 0 !important;
+}
+
+.off-plan-detail-leaflet-map .leaflet-pane {
+  z-index: 1 !important;
+}
+
+.off-plan-detail-leaflet-map .leaflet-top,
+.off-plan-detail-leaflet-map .leaflet-bottom {
+  z-index: 2 !important;
+}
+
+.off-plan-detail-leaflet-map .leaflet-control {
+  z-index: 3 !important;
+}
