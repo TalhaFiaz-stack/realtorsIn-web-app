@@ -18,4 +18,16 @@ describe("getSafeNextPath", () => {
     expect(getSafeNextPath(null)).toBe("/feed");
     expect(getSafeNextPath(undefined, "/login")).toBe("/login");
   });
+
+  it("blocks control-character tricks that browsers turn into //host", () => {
+    expect(getSafeNextPath("/\t/evil.com")).toBe("/feed");
+    expect(getSafeNextPath("/\n/evil.com")).toBe("/feed");
+    expect(getSafeNextPath("/\r\n/evil.com")).toBe("/feed");
+    expect(getSafeNextPath(decodeURIComponent("/%09/evil.com"))).toBe("/feed");
+  });
+
+  it("keeps query and hash on safe paths", () => {
+    expect(getSafeNextPath("/listings?tab=off-plan#map")).toBe("/listings?tab=off-plan#map");
+  });
 });
+

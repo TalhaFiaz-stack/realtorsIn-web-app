@@ -1,5 +1,5 @@
 import { fetchCommentReactions } from "@/features/feed/services/posts.server";
-import { handleBffError, jsonOk } from "@/lib/auth/bff";
+import { handleBffError, jsonOk, requireCsrf } from "@/lib/auth/bff";
 import { z } from "zod";
 
 const schema = z.object({
@@ -10,6 +10,7 @@ const schema = z.object({
 
 export async function POST(request: Request) {
   try {
+    await requireCsrf(request);
     const body = schema.parse(await request.json());
     const result = await fetchCommentReactions(body);
     return jsonOk({ ok: true, ...result });

@@ -13,11 +13,6 @@ function offplanBaseUrl(): string {
   return (getEnv().OFFPLAN_API_URL ?? DEFAULT_OFFPLAN_URL).replace(/\/$/, "");
 }
 
-export function offplanV2BaseUrl(): string {
-  const url = getEnv().OFFPLAN_API_V2_URL ?? "https://apiv2.remapp.ae";
-  return url.replace(/\/$/, "");
-}
-
 type OffplanRequestOptions = {
   path: string;
   method?: "GET" | "POST";
@@ -88,47 +83,6 @@ export async function offplanRequest<T>(
     throw new ApiError(
       apiError.code,
       apiError.message || "Off-plan request failed",
-      apiError.status ?? 502,
-      apiError.details
-    );
-  }
-}
-
-export async function offplanV2Request<T>(options: {
-  path: string;
-  method?: "GET";
-  auth?: boolean;
-  signal?: AbortSignal;
-}): Promise<T> {
-  const { path, method = "GET", auth = true, signal } = options;
-  let token: string | null = null;
-  if (auth) {
-    token = await resolveBearerToken(true);
-  }
-  const headers: Record<string, string> = {
-    Accept: "application/json",
-    locale: "en",
-    device: "1",
-  };
-  if (token) {
-    headers.Authorization = `Bearer ${token}`;
-  }
-  const url = path.startsWith("/") ? path : `/${path}`;
-  try {
-    const response = await axios.request<T>({
-      baseURL: offplanV2BaseUrl(),
-      url,
-      method,
-      headers,
-      timeout: TIMEOUT_MS,
-      signal,
-    });
-    return response.data;
-  } catch (error) {
-    const apiError = toApiError(error);
-    throw new ApiError(
-      apiError.code,
-      apiError.message || "Off-plan v2 request failed",
       apiError.status ?? 502,
       apiError.details
     );

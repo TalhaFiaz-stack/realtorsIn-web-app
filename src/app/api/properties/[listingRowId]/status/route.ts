@@ -3,7 +3,7 @@ import {
   fetchPropertyListingDetail,
   updatePropertyListingStatus,
 } from "@/features/properties/services/properties.server";
-import { handleBffError, jsonOk } from "@/lib/auth/bff";
+import { handleBffError, jsonOk, requireCsrf } from "@/lib/auth/bff";
 
 function parseListingRef(
   listingRowId: number,
@@ -21,6 +21,7 @@ export async function POST(
   context: { params: Promise<{ listingRowId: string }> }
 ) {
   try {
+    await requireCsrf(request);
     const { listingRowId: idRaw } = await context.params;
     const listingRowId = Number(idRaw);
     if (!Number.isFinite(listingRowId) || listingRowId <= 0) {

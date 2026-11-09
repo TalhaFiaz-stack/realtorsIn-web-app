@@ -5,6 +5,7 @@ import {
 import { parseCertificateUpsertForm } from "@/features/profile/lib/parse-section-upsert-form";
 import { sectionDeleteSchema } from "@/features/profile/validators/profile.validators";
 import { handleBffError, jsonOk, requireCsrf } from "@/lib/auth/bff";
+import { readFormData, UPLOAD_LIMITS } from "@/lib/api/read-form-data";
 
 export async function POST(request: Request) {
   try {
@@ -20,7 +21,7 @@ export async function POST(request: Request) {
       }
     }
 
-    const form = await request.formData();
+    const form = await readFormData(request, UPLOAD_LIMITS.profileSection);
     if (form.get("action") === "delete") {
       const body = sectionDeleteSchema.parse({
         id: Number(form.get("id")),

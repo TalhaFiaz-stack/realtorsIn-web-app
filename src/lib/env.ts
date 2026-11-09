@@ -22,7 +22,6 @@ const serverSchema = baseSchema.extend({
   }),
   REM_CRM_API_URL: z.string().url().optional(),
   OFFPLAN_API_URL: z.string().url().optional(),
-  OFFPLAN_API_V2_URL: z.string().url().optional(),
 });
 
 export type AppEnv = z.infer<typeof serverSchema>;
@@ -38,7 +37,6 @@ function readRawEnv() {
     SOCIAL_API_URL: process.env.SOCIAL_API_URL,
     REM_CRM_API_URL: process.env.REM_CRM_API_URL,
     OFFPLAN_API_URL: process.env.OFFPLAN_API_URL,
-    OFFPLAN_API_V2_URL: process.env.OFFPLAN_API_V2_URL,
     AUTH_COOKIE_NAME: process.env.AUTH_COOKIE_NAME,
     SESSION_COOKIE_SECURE: process.env.SESSION_COOKIE_SECURE,
     SESSION_COOKIE_MAX_AGE: process.env.SESSION_COOKIE_MAX_AGE,
@@ -86,3 +84,18 @@ export function getPublicAppUrl(): string {
 export function getAuthCookieName(): string {
   return process.env.AUTH_COOKIE_NAME || "ri_session";
 }
+
+/**
+ * Session cookies are `Secure` whenever the app is served over https — not
+ * only in production builds — so staging/preview deploys never send the
+ * session over plain http.
+ */
+export function isSecureCookieContext(): boolean {
+  const env = getBaseEnv();
+  return (
+    env.SESSION_COOKIE_SECURE ||
+    env.NODE_ENV === "production" ||
+    env.NEXT_PUBLIC_APP_URL.startsWith("https://")
+  );
+}
+

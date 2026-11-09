@@ -74,7 +74,7 @@ export function mapOffPlanUnitDetail(raw: unknown): OffPlanUnitDetail | null {
 }
 
 export async function fetchOffPlanUnitDetail(unitId: string): Promise<OffPlanUnitDetail> {
-  const payload = await offplanRequest<unknown>({ path: `rn/inventory/${unitId}`, method: "GET" });
+  const payload = await offplanRequest<unknown>({ path: `rn/inventory/${encodeURIComponent(unitId)}`, method: "GET" });
   if (!isOffplanSuccess(payload)) {
     throw new ApiError("NOT_FOUND", "Unit not found", 404);
   }

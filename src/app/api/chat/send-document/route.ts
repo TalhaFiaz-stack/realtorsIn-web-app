@@ -2,10 +2,16 @@ import { getValidatedSession } from "@/features/auth/services/auth.server";
 import { sendChatDocument } from "@/features/chat/services/chat.server";
 import { handleBffError, jsonOk, requireCsrf } from "@/lib/auth/bff";
 import { z } from "zod";
+import { isTrustedMediaUrl } from "@/lib/security/media-url";
 
 const schema = z.object({
   receiverId: z.coerce.number().int().positive(),
-  documentUrl: z.string().trim().min(1).max(2000),
+  documentUrl: z
+    .string()
+    .trim()
+    .min(1)
+    .max(2000)
+    .refine(isTrustedMediaUrl, "Documents must be uploaded through RealtorsIn"),
   documentName: z.string().trim().min(1).max(255),
   documentSize: z.coerce.number().int().nonnegative(),
   messageContent: z.string().trim().max(4000).optional(),

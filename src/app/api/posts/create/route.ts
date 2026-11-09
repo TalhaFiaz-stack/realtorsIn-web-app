@@ -11,6 +11,7 @@ import {
   jsonOk,
   requireCsrf,
 } from "@/lib/auth/bff";
+import { readFormData, UPLOAD_LIMITS } from "@/lib/api/read-form-data";
 
 /** Shared inquiry + property listing string fields (mobile posts/store). */
 const LISTING_STRING_FIELDS = [
@@ -53,7 +54,7 @@ function appendStringFields(
 export async function POST(request: Request) {
   try {
     await requireCsrf(request);
-    const incoming = await request.formData();
+    const incoming = await readFormData(request, UPLOAD_LIMITS.post);
     const fields = createPostFieldsSchema.parse({
       description: String(incoming.get("description") ?? ""),
       visibility: String(incoming.get("visibility") ?? "connections"),

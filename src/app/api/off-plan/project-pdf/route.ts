@@ -13,7 +13,7 @@ const toggleSchema = z.object({
 });
 
 const bodySchema = z.object({
-  projectId: z.string().min(1),
+  projectId: z.string().trim().regex(/^[A-Za-z0-9_-]{1,64}$/, "Invalid project id"),
   currency: z.string().default("AED"),
   language: z.string().default("en"),
   theme: z.enum(["light", "dark"]).default("light"),

@@ -62,7 +62,7 @@ export async function fetchOffPlanProjectDetail(
   projectId: string
 ): Promise<OffPlanProjectDetail> {
   const payload = await offplanRequest<unknown>({
-    path: `rn/projects/${projectId}`,
+    path: `rn/projects/${encodeURIComponent(projectId)}`,
     method: "GET",
   });
   assertOffplan(payload, "Unable to load project");
@@ -93,7 +93,7 @@ export async function fetchOffPlanInventory(
   projectId: string
 ): Promise<OffPlanInventoryUnit[]> {
   const payload = await offplanRequest<unknown>({
-    path: `rn/inventory/project/${projectId}`,
+    path: `rn/inventory/project/${encodeURIComponent(projectId)}`,
     method: "GET",
   });
   if (!isOffplanSuccess(payload)) {

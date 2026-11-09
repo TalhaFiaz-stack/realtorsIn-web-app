@@ -5,6 +5,7 @@ import {
   jsonOk,
   requireCsrf,
 } from "@/lib/auth/bff";
+import { readFormData, UPLOAD_LIMITS } from "@/lib/api/read-form-data";
 
 const MAX_BYTES = 10 * 1024 * 1024;
 const ALLOWED = new Set([
@@ -18,7 +19,7 @@ const ALLOWED = new Set([
 export async function POST(request: Request) {
   try {
     await requireCsrf(request);
-    const form = await request.formData();
+    const form = await readFormData(request, UPLOAD_LIMITS.profilePhoto);
     const socialProfileId = Number(form.get("socialProfileId"));
     const kindRaw = String(form.get("kind") ?? "profile");
     const kind =

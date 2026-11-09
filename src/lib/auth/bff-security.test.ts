@@ -37,4 +37,15 @@ describe("auth security helpers", () => {
     const zodRes = handleBffError(parsed.error);
     expect(zodRes.status).toBe(400);
   });
+
+  it("hides raw upstream DB/runtime errors but keeps friendly messages", async () => {
+    const leak = handleBffError(
+      new ApiError("SERVER", "SequelizeDatabaseError: column \"x\" does not exist", 500)
+    );
+    expect((await leak.json()).message).toBe("Something went wrong. Please try again.");
+
+    const friendly = handleBffError(new ApiError("SERVER", "Unable to block this user", 502));
+    expect((await friendly.json()).message).toBe("Unable to block this user");
+  });
 });
+

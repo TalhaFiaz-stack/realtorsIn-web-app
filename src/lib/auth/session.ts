@@ -2,6 +2,7 @@ import "server-only";
 
 import { cookies } from "next/headers";
 import { getAuthCookieName, getBaseEnv } from "@/lib/env";
+import { isSecureCookieContext } from "@/lib/env";
 
 export const SESSION_COOKIE_PATH = "/";
 
@@ -37,7 +38,7 @@ export async function setSessionCookie(token: string): Promise<void> {
   const jar = await cookies();
   jar.set(getAuthCookieName(), token, {
     httpOnly: true,
-    secure: env.SESSION_COOKIE_SECURE || env.NODE_ENV === "production",
+    secure: isSecureCookieContext(),
     sameSite: "lax",
     path: SESSION_COOKIE_PATH,
     maxAge: env.SESSION_COOKIE_MAX_AGE,
@@ -48,9 +49,7 @@ export async function clearSessionCookie(): Promise<void> {
   const jar = await cookies();
   jar.set(getAuthCookieName(), "", {
     httpOnly: true,
-    secure:
-      process.env.SESSION_COOKIE_SECURE === "true" ||
-      process.env.NODE_ENV === "production",
+    secure: isSecureCookieContext(),
     sameSite: "lax",
     path: SESSION_COOKIE_PATH,
     maxAge: 0,

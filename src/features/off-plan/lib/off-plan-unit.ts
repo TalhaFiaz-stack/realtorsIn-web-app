@@ -114,5 +114,5 @@ export function buildUnitPdfPath(
   options: UnitDocumentOptions
 ): string {
   const prefix = kind === "quotation" ? "off_plan/unit/quotation/pdf" : "off_plan/unit/pdf";
-  return `${prefix}/${projectId}/${unitId}?${buildUnitDocumentQuery(kind, options)}`;
+  return `${prefix}/${encodeURIComponent(projectId)}/${encodeURIComponent(unitId)}?${buildUnitDocumentQuery(kind, options)}`;
 }

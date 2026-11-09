@@ -1,9 +1,10 @@
 import { fetchPropertyAgentContact } from "@/features/properties/services/properties.server";
 import { normalizeRemPropertyId } from "@/features/properties/lib/normalize-rem-property-id";
-import { handleBffError, jsonOk } from "@/lib/auth/bff";
+import { handleBffError, jsonOk, requireCsrf } from "@/lib/auth/bff";
 
 export async function POST(request: Request) {
   try {
+    await requireCsrf(request);
     const body = (await request.json()) as {
       listingRowId?: number;
       type?: string;

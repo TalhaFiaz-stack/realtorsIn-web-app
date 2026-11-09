@@ -1,3 +1,5 @@
+import { sanitizeRichHtml } from "@/lib/security/sanitize-html";
+
 const ENTITY_MAP: Record<string, string> = {
   "&amp;": "&",
   "&nbsp;": " ",
@@ -15,10 +17,11 @@ export function decodeOffPlanHtmlEntities(html: string): string {
   );
 }
 
-/** Strip scripts/event handlers before rendering trusted REM HTML. */
+/**
+ * Sanitize REM rich-text descriptions before rendering. Upstream often sends
+ * the HTML entity-escaped, so decode first, then run the allow-list
+ * sanitizer (DOMPurify) on the real markup.
+ */
 export function sanitizeOffPlanHtml(html: string): string {
-  let safe = decodeOffPlanHtmlEntities(html);
-  safe = safe.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "");
-  safe = safe.replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "");
-  return safe;
+  return sanitizeRichHtml(decodeOffPlanHtmlEntities(html));
 }

@@ -172,9 +172,15 @@ export function OffPlanUnitDetailScreen({
   async function downloadPdf(kind: UnitDocumentKind, options: UnitDocumentOptions) {
     // Open the tab synchronously (user gesture) so the browser doesn't block it.
     const tab = window.open("about:blank", "_blank");
+    // The PDF host must not get a handle back to this page (reverse tabnabbing).
+    if (tab) tab.opener = null;
     setPdfPending(true);
     try {
       const { url } = await requestOffPlanUnitDocumentClient({ kind, projectId, unitId, ...options });
+      if (!/^https:\/\//i.test(url)) {
+        tab?.close();
+        throw new Error("The document link is not a secure https URL.");
+      }
       if (tab) tab.location.href = url;
       else window.open(url, "_blank", "noopener,noreferrer");
       trackOffPlanActivity({

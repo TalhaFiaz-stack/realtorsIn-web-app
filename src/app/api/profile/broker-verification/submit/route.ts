@@ -11,6 +11,7 @@ import {
   jsonOk,
   requireCsrf,
 } from "@/lib/auth/bff";
+import { readFormData, UPLOAD_LIMITS } from "@/lib/api/read-form-data";
 
 function readOptionalFile(form: FormData, key: string): File | undefined {
   const value = form.get(key);
@@ -21,7 +22,7 @@ function readOptionalFile(form: FormData, key: string): File | undefined {
 export async function POST(request: Request) {
   try {
     await requireCsrf(request);
-    const form = await request.formData();
+    const form = await readFormData(request, UPLOAD_LIMITS.brokerVerification);
     const socialProfileId = Number(form.get("socialProfileId"));
     const socialProfileLinks = String(form.get("socialProfileLinks") ?? "").trim();
 

@@ -138,5 +138,5 @@ export function buildOffPlanProjectPdfPath(
   options: OffPlanPresentationOptions
 ): string {
   const query = buildOffPlanPresentationQuery(options);
-  return `realtorsin/project/pdf/${projectId}?${query}&phone=true`;
+  return `realtorsin/project/pdf/${encodeURIComponent(projectId)}?${query}&phone=true`;
 }

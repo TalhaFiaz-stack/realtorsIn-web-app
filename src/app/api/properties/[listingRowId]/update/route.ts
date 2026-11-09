@@ -8,6 +8,7 @@ import {
   jsonOk,
   requireCsrf,
 } from "@/lib/auth/bff";
+import { readFormData, UPLOAD_LIMITS } from "@/lib/api/read-form-data";
 
 function parseListingRef(
   listingRowId: number,
@@ -33,7 +34,7 @@ export async function POST(
     }
     const { searchParams } = new URL(request.url);
     const ref = parseListingRef(listingRowId, searchParams);
-    const incoming = await request.formData();
+    const incoming = await readFormData(request, UPLOAD_LIMITS.listing);
     const rowIdFromForm = Number(incoming.get("listing_row_id"));
     if (rowIdFromForm !== listingRowId) {
       incoming.set("listing_row_id", String(listingRowId));

@@ -1,12 +1,13 @@
 import { normalizeRemPropertyId } from "@/features/properties/lib/normalize-rem-property-id";
 import { deletePropertyListing } from "@/features/properties/services/properties.server";
-import { handleBffError, jsonOk } from "@/lib/auth/bff";
+import { handleBffError, jsonOk, requireCsrf } from "@/lib/auth/bff";
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ listingRowId: string }> }
 ) {
   try {
+    await requireCsrf(request);
     const { listingRowId: idRaw } = await context.params;
     const listingRowId = Number(idRaw);
     if (!Number.isFinite(listingRowId) || listingRowId <= 0) {

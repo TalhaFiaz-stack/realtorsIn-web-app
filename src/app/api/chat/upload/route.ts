@@ -5,13 +5,14 @@ import {
   requireCsrf,
 } from "@/lib/auth/bff";
 import { uploadChatFile } from "@/features/chat/services/chat.server";
+import { readFormData, UPLOAD_LIMITS } from "@/lib/api/read-form-data";
 
 const MAX_BYTES = 50 * 1024 * 1024;
 
 export async function POST(request: Request) {
   try {
     await requireCsrf(request);
-    const form = await request.formData();
+    const form = await readFormData(request, UPLOAD_LIMITS.chat);
     const file = form.get("file");
     if (!(file instanceof File) || !file.size) {
       return jsonError("File is required", 400, "VALIDATION");

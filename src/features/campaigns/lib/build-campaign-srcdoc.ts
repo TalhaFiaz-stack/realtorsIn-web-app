@@ -1,3 +1,4 @@
+import { getSafeNextPath } from "@/lib/auth/safe-redirect";
 /**
  * Wrap admin-authored campaign HTML for a sandboxed iframe (no same-origin).
  * Mirrors mobile CampaignPreviewBTSheet: link / data-href clicks are handed to
@@ -81,6 +82,10 @@ export function classifyCampaignLink(
   // App scheme (realtorsin://…) or app-relative path → same routing as pushes.
   const path = resolveDeepLink(raw);
   if (path) return { kind: "internal", path };
-  if (raw.startsWith("/") && !raw.startsWith("//")) return { kind: "internal", path: raw };
+  if (raw.startsWith("/")) {
+    // Same hardened check as login redirects ("/\\evil.com", "/\t/evil.com"…).
+    const safe = getSafeNextPath(raw, "");
+    return safe ? { kind: "internal", path: safe } : { kind: "ignore" };
+  }
   return { kind: "ignore" };
 }

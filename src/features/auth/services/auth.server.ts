@@ -11,7 +11,7 @@ import {
   setSessionCookie,
 } from "@/lib/auth/session";
 import { getSafeNextPath } from "@/lib/auth/safe-redirect";
-import { decodeJwtPayload } from "@/features/auth/lib/decode-jwt-payload";
+import { getBaseEnv } from "@/lib/env";
 import {
   backendMessage,
   extractNodeToken,
@@ -393,11 +393,68 @@ function str(value: unknown): string | undefined {
   return typeof value === "string" && value.trim() ? value.trim() : undefined;
 }
 
+const GOOGLE_ISSUERS = new Set(["accounts.google.com", "https://accounts.google.com"]);
+
+/**
+ * Checks the Google ID token with Google's tokeninfo endpoint (signature,
+ * expiry) and then that `aud` is our web client id and the email is verified.
+ */
+async function verifyGoogleIdToken(
+  credential: string
+): Promise<Record<string, unknown> | null> {
+  const clientId = getBaseEnv().NEXT_PUBLIC_GOOGLE_CLIENT_ID?.trim();
+  if (!clientId || !credential) return null;
+  try {
+    const res = await fetch(
+      `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(credential)}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return null;
+    const claims = (await res.json()) as Record<string, unknown>;
+    const exp = Number(claims.exp);
+    const emailVerified = claims.email_verified === true || claims.email_verified === "true";
+    if (
+      claims.aud !== clientId ||
+      !GOOGLE_ISSUERS.has(String(claims.iss)) ||
+      !Number.isFinite(exp) ||
+      exp * 1000 < Date.now() ||
+      !emailVerified
+    ) {
+      return null;
+    }
+    return claims;
+  } catch {
+    return null;
+  }
+}
+
+/** `GET /app` with a user access token returns the app that token was issued to. */
+async function isOwnFacebookAppToken(accessToken: string): Promise<boolean> {
+  const appId = getBaseEnv().NEXT_PUBLIC_FACEBOOK_APP_ID?.trim();
+  if (!appId || !accessToken) return false;
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/app?fields=id&access_token=${encodeURIComponent(accessToken)}`,
+      { cache: "no-store" }
+    );
+    if (!res.ok) return false;
+    const app = (await res.json()) as { id?: unknown };
+    return String(app.id ?? "") === appId;
+  } catch {
+    return false;
+  }
+}
+
 async function buildSocialLoginBody(
   input: SocialSignInInput
 ): Promise<Record<string, unknown> | AuthActionFailure> {
   if (input.provider === "google") {
-    const claims = decodeJwtPayload(input.credential);
+    // Verify the ID token with Google and require it was issued to *our*
+    // client. A token from any other "Sign in with Google" site must fail.
+    const claims = await verifyGoogleIdToken(input.credential);
+    if (!claims) {
+      return { ok: false, message: "Google sign-in could not be verified. Please try again." };
+    }
     const id = str(claims?.sub);
     const email = str(claims?.email);
     if (!id || !email) {
@@ -414,6 +471,11 @@ async function buildSocialLoginBody(
   }
 
   if (input.provider === "facebook") {
+    // The access token must belong to *our* Facebook app, not any app the
+    // user once logged into.
+    if (!(await isOwnFacebookAppToken(input.accessToken))) {
+      return { ok: false, message: "Facebook sign-in could not be verified. Please try again." };
+    }
     const res = await fetch(
       `https://graph.facebook.com/me?fields=id,email,first_name,last_name,name&access_token=${encodeURIComponent(input.accessToken)}`,
       { cache: "no-store" }

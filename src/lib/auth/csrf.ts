@@ -18,22 +18,39 @@ export function assertSameOrigin(request: Request): void {
   const origin = request.headers.get("origin");
   const referer = request.headers.get("referer");
   const host = request.headers.get("host");
-  const appUrl = getPublicAppUrl();
 
-  const allowed = new Set<string>([appUrl]);
+  // Exact origin match only. `startsWith` let lookalikes such as
+  // https://realtorsin.com.evil.net through.
+  const allowed = new Set<string>();
+  const appOrigin = originOf(getPublicAppUrl());
+  if (appOrigin) allowed.add(appOrigin);
   if (host) {
-    allowed.add(`http://${host}`);
     allowed.add(`https://${host}`);
+    // Plain http only for local development hosts.
+    if (isLocalHost(host)) allowed.add(`http://${host}`);
   }
 
-  const candidate = origin || (referer ? new URL(referer).origin : null);
+  const candidate = origin ? originOf(origin) : referer ? originOf(referer) : null;
   if (!candidate) {
     throw new CsrfError("Missing Origin/Referer for state-changing request");
   }
 
-  if (![...allowed].some((base) => candidate === base || candidate.startsWith(base))) {
+  if (!allowed.has(candidate)) {
     throw new CsrfError("Cross-origin request blocked");
   }
+}
+
+function originOf(value: string): string | null {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+}
+
+function isLocalHost(host: string): boolean {
+  const name = host.replace(/:\d+$/, "").replace(/^\[|\]$/g, "").toLowerCase();
+  return name === "localhost" || name === "127.0.0.1" || name === "::1" || name.endsWith(".localhost");
 }
 
 export class CsrfError extends Error {

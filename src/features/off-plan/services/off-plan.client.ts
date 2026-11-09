@@ -41,7 +41,7 @@ export async function fetchOffPlanProjectDetailClient(
   signal?: AbortSignal
 ) {
   return bffRequest<{ ok: true; project: OffPlanProjectDetail }>({
-    path: `off-plan/projects/${projectId}`,
+    path: `off-plan/projects/${encodeURIComponent(projectId)}`,
     method: "GET",
     signal,
   });
@@ -101,7 +101,7 @@ export async function fetchOffPlanInventoryClient(
   signal?: AbortSignal
 ) {
   return bffRequest<{ ok: true; units: OffPlanInventoryUnit[] }>({
-    path: `off-plan/inventory/${projectId}`,
+    path: `off-plan/inventory/${encodeURIComponent(projectId)}`,
     method: "GET",
     signal,
   });

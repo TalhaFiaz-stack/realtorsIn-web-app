@@ -1,6 +1,7 @@
 import "server-only";
 
 import { getEnv } from "@/lib/env";
+import { sanitizeRichHtml } from "@/lib/security/sanitize-html";
 
 export type LegalKind = "terms" | "privacy";
 
@@ -11,15 +12,9 @@ export type LegalDocument = {
 
 /** Strip scripts, styles, inline handlers and inline styles from backend HTML. */
 export function sanitizeLegalHtml(raw: string): string {
-  return raw
-    .replace(/<script[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[\s\S]*?<\/style>/gi, "")
-    .replace(/<(iframe|object|embed|form|input|button)[\s\S]*?(<\/\1>|\/?>)/gi, "")
-    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(/\sstyle\s*=\s*("[^"]*"|'[^']*')/gi, "")
-    .replace(/\sclass\s*=\s*("[^"]*"|'[^']*')/gi, "")
-    .replace(/href\s*=\s*("|')\s*javascript:[^"']*\1/gi, 'href="#"')
-    .trim();
+  // Allow-list sanitizer (DOMPurify): drops scripts, styles, classes, event
+  // handlers and non-http(s) links. No images on legal pages.
+  return sanitizeRichHtml(raw, { allowImages: false }).trim();
 }
 
 /** Main body of the backend page: `<div class="content">` … up to the footer. */
