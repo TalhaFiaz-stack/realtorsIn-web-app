@@ -10,6 +10,7 @@ import {
   Building2,
   Check,
   Home,
+  LifeBuoy,
   MessageCircle,
   Newspaper,
   PartyPopper,
@@ -20,6 +21,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { RealtorsInLogo } from "@/components/brand/realtorsin-logo";
 import { FeaturePreview } from "@/components/landing/app-previews";
+import { AppStoreBadges, SocialLinks } from "@/components/landing/site-link-badges";
+import { SUPPORT_LINKS } from "@/constants/site-links";
 import { PRODUCT_FEATURES, type ProductFeatureId } from "@/constants/product-tour";
 import { cn } from "@/lib/utils";
 
@@ -227,7 +230,37 @@ export function GettingStartedTour({ firstName }: { firstName: string }) {
                   </li>
                 ))}
               </ul>
-              <p className="mt-6 text-sm text-muted-foreground">
+              <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                  <p className="font-semibold">Get the mobile app</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Same account on iOS and Android — post from viewings and reply on the go.
+                  </p>
+                  <AppStoreBadges className="mt-4" />
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-5 shadow-sm">
+                  <p className="font-semibold">Follow RealtorsIn</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Market updates, launches and tips.</p>
+                  <SocialLinks className="mt-4" />
+                </div>
+              </div>
+
+              <p className="mt-6 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
+                <LifeBuoy className="h-4 w-4" aria-hidden />
+                Need help?
+                <a href={SUPPORT_LINKS.contact} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
+                  Contact us
+                </a>
+                ·
+                <a href={SUPPORT_LINKS.whatsapp} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
+                  WhatsApp
+                </a>
+                ·
+                <a href={SUPPORT_LINKS.faqs} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
+                  FAQs
+                </a>
+              </p>
+              <p className="mt-2 text-sm text-muted-foreground">
                 You can replay this tour anytime from{" "}
                 <Link href="/settings" className="font-semibold text-primary hover:underline">
                   Settings → Getting started tour

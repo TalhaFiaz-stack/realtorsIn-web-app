@@ -161,7 +161,7 @@ export const LANDING_FAQ = [
   },
   {
     q: "Can I use the same account on web and mobile?",
-    a: "Yes. Sign in on the web or in the RealtorsIn mobile app with the same account — your profile, network, posts and messages stay in sync.",
+    a: "Yes. Sign in on the web or in the RealtorsIn app (App Store and Google Play) with the same account — your profile, network, posts and messages stay in sync.",
   },
   {
     q: "How do I create a presentation or quotation for a client?",

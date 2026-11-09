@@ -14,6 +14,8 @@ import {
 import type { LucideIcon } from "lucide-react";
 import { RealtorsInLogo } from "@/components/brand/realtorsin-logo";
 import { FeaturePreview, HeroPreview } from "@/components/landing/app-previews";
+import { AppStoreBadges, SocialLinks } from "@/components/landing/site-link-badges";
+import { COMPANY_LINKS, LEGAL_LINKS, SITE_URL, SUPPORT_LINKS } from "@/constants/site-links";
 import {
   AUDIENCES,
   HOW_IT_WORKS,
@@ -52,6 +54,7 @@ export function LandingPage() {
             <a href="#how-it-works" className="hover:text-foreground">How it works</a>
             <a href="#who" className="hover:text-foreground">Who it’s for</a>
             <a href="#faq" className="hover:text-foreground">FAQ</a>
+            <a href="#app" className="hover:text-foreground">Get the app</a>
           </nav>
           <div className="ms-auto flex items-center gap-2">
             <Link href="/login" className="rounded-full px-4 py-2 text-sm font-semibold text-foreground hover:bg-muted">
@@ -102,6 +105,10 @@ export function LandingPage() {
                 >
                   See how it works
                 </a>
+              </div>
+              <div className="mt-6">
+                <p className="mb-2 text-xs font-medium text-muted-foreground">Also on mobile</p>
+                <AppStoreBadges />
               </div>
               <dl className="mt-10 grid max-w-lg grid-cols-3 gap-4 border-t border-border pt-6">
                 {PRODUCT_HIGHLIGHTS.map((h) => (
@@ -247,6 +254,37 @@ export function LandingPage() {
                 </details>
               ))}
             </div>
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              More questions?{" "}
+              <a href={SUPPORT_LINKS.faqs} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
+                See all FAQs
+              </a>{" "}
+              or{" "}
+              <a href={SUPPORT_LINKS.contact} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary hover:underline">
+                contact us
+              </a>
+              .
+            </p>
+          </div>
+        </section>
+
+        {/* ── Mobile app ── */}
+        <section id="app" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-20 sm:px-6">
+          <div className="grid items-center gap-8 rounded-3xl border border-border bg-card p-8 shadow-sm sm:p-10 lg:grid-cols-[1.2fr_1fr]">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.14em] text-primary">Get the app</p>
+              <h2 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">Take your network everywhere</h2>
+              <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+                Post from a viewing, reply to clients on the go and get instant notifications. Your account, posts and
+                chats stay in sync between the web and the RealtorsIn app for iOS and Android.
+              </p>
+              <AppStoreBadges className="mt-6" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Follow RealtorsIn</p>
+              <p className="mt-1 text-sm text-muted-foreground">Market updates, launches and tips from the team.</p>
+              <SocialLinks className="mt-4" />
+            </div>
           </div>
         </section>
 
@@ -269,17 +307,54 @@ export function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-border">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-4 py-8 text-sm text-muted-foreground sm:flex-row sm:px-6">
-          <RealtorsInLogo className="h-7 w-auto" />
-          <nav className="flex gap-5" aria-label="Legal">
-            <Link href="/legal/terms" className="hover:text-foreground">Terms</Link>
-            <Link href="/legal/privacy" className="hover:text-foreground">Privacy</Link>
-            <Link href="/login" className="hover:text-foreground">Sign in</Link>
-          </nav>
-          <p>© {new Date().getFullYear()} RealtorsIn</p>
+      <footer className="border-t border-border bg-muted/20">
+        <div className="mx-auto grid max-w-6xl gap-10 px-4 py-12 sm:grid-cols-2 sm:px-6 lg:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div>
+            <RealtorsInLogo className="h-8 w-auto" />
+            <p className="mt-3 max-w-xs text-sm leading-relaxed text-muted-foreground">
+              The professional network for UAE real-estate agents, brokers, agencies and developers.
+            </p>
+            <SocialLinks size="sm" className="mt-4" />
+          </div>
+          <FooterColumn title="Company" links={COMPANY_LINKS} />
+          <FooterColumn title="Legal" links={LEGAL_LINKS} />
+          <div>
+            <p className="text-sm font-semibold">Get the app</p>
+            <AppStoreBadges className="mt-3 flex-col items-start" />
+          </div>
+        </div>
+        <div className="border-t border-border">
+          <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-2 px-4 py-5 text-xs text-muted-foreground sm:flex-row sm:px-6">
+            <p>© {new Date().getFullYear()} RealtorsIn. All rights reserved.</p>
+            <a href={SITE_URL} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+              realtorsin.com
+            </a>
+          </div>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function FooterColumn({
+  title,
+  links,
+}: {
+  title: string;
+  links: ReadonlyArray<{ label: string; href: string }>;
+}) {
+  return (
+    <div>
+      <p className="text-sm font-semibold">{title}</p>
+      <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+        {links.map((l) => (
+          <li key={l.href}>
+            <a href={l.href} target="_blank" rel="noopener noreferrer" className="hover:text-foreground">
+              {l.label}
+            </a>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
