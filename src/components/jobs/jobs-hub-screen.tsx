@@ -1,5 +1,6 @@
 "use client";
 
+import { BriefcaseBusiness, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { JobCard } from "@/components/jobs/job-card";
@@ -118,13 +119,14 @@ export function JobsHubScreen() {
         <HubControlCardHeader>
           <HubModuleHeader
             title="Jobs"
+            subtitle="Find roles and hire talent in real estate"
+            icon={BriefcaseBusiness}
             action={
-              <Button
-                asChild
-                size="sm"
-                className="h-9 rounded-lg px-3 shadow-none"
-              >
-                <Link href="/jobs/create">Post job</Link>
+              <Button asChild size="sm" className="h-9 gap-1.5 rounded-full px-4 shadow-none">
+                <Link href="/jobs/create">
+                  <Plus className="h-4 w-4" aria-hidden />
+                  Post a job
+                </Link>
               </Button>
             }
           />

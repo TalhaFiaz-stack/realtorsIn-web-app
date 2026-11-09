@@ -13,6 +13,7 @@ import {
 import { usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { mapMessage } from "@/features/chat/lib/map-chat";
+import { appendMessage, type InfiniteMessages } from "@/features/chat/lib/thread-cache";
 import { notifyChatMessageInBrowser } from "@/features/chat/lib/chat-browser-notify";
 import { previewFromChatMessage } from "@/features/chat/lib/message-list-preview";
 import { refreshChatUnreadCache } from "@/features/chat/lib/patch-conversations-cache";
@@ -24,16 +25,7 @@ import {
   updateConversationPreview,
 } from "@/features/chat/lib/patch-conversations-cache";
 import { useChatToastStore } from "@/features/chat/store/chat-toast.store";
-import type {
-  ChatMessage,
-  ConversationsPage,
-  MessagesPage,
-} from "@/features/chat/types/chat.types";
-
-type InfiniteMessages = {
-  pages: MessagesPage[];
-  pageParams: unknown[];
-};
+import type { ConversationsPage } from "@/features/chat/types/chat.types";
 
 type ChatRealtimeContextValue = {
   connected: boolean;
@@ -48,28 +40,6 @@ type ChatRealtimeContextValue = {
 const ChatRealtimeContext = createContext<ChatRealtimeContextValue | null>(
   null
 );
-
-function appendMessage(
-  current: InfiniteMessages | undefined,
-  message: ChatMessage
-): InfiniteMessages | undefined {
-  if (!current?.pages?.length) return current;
-  const exists = current.pages.some((page) =>
-    page.messages.some((item) => item.id === message.id)
-  );
-  if (exists) return current;
-  const [first, ...rest] = current.pages;
-  return {
-    ...current,
-    pages: [
-      {
-        ...first,
-        messages: [...(first.messages ?? []), message],
-      },
-      ...rest,
-    ],
-  };
-}
 
 export function ChatRealtimeProvider({
   currentUserId,

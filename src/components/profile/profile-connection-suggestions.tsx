@@ -50,6 +50,7 @@ export function ProfileConnectionSuggestions() {
 
   return (
     <SuggestionsSection
+      title="People you may know"
       suggestions={suggestions}
       loading={suggestionsQuery.isLoading}
       maxItems={3}

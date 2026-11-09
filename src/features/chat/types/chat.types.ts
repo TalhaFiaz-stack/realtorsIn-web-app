@@ -6,6 +6,13 @@ export type ChatUser = {
   isOnline: boolean;
 };
 
+export type BlockedChatUser = {
+  userId: number;
+  name: string;
+  avatarUrl: string | null;
+  blockedAt: string | null;
+};
+
 export type ConversationSummary = {
   id: number;
   otherUser: ChatUser;
@@ -84,6 +91,12 @@ export type ChatSharedStory = {
   isExpired: boolean;
 };
 
+export type ChatMessageReaction = {
+  emoji: string;
+  count: number;
+  userIds: number[];
+};
+
 export type ChatMessage = {
   id: number;
   conversationId: number;
@@ -105,6 +118,10 @@ export type ChatMessage = {
   sharedEvent: ChatSharedEvent | null;
   sharedProfile: ChatSharedProfile | null;
   sharedStory: ChatSharedStory | null;
+  isEdited: boolean;
+  /** Deleted for everyone — backend keeps a placeholder row. */
+  isDeleted: boolean;
+  reactions: ChatMessageReaction[];
 };
 
 export type ConversationsPage = {

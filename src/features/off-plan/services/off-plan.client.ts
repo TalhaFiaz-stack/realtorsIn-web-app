@@ -1,3 +1,8 @@
+import type {
+  OffPlanUnitDetail,
+  UnitDocumentKind,
+  UnitDocumentOptions,
+} from "@/features/off-plan/lib/off-plan-unit";
 import { bffRequest } from "@/lib/api/client";
 import type { OffPlanSearchSections } from "@/features/off-plan/types/off-plan-search.types";
 import type {
@@ -186,41 +191,23 @@ export async function fetchRemAgentContactClient(input: {
   });
 }
 
-export type UnitPdfQuery = {
-  currency?: string;
-  language?: string;
-  area?: "sqft" | "sqm";
-  theme?: "light" | "dark";
-  design?: "v1" | "v2";
-  watermark?: boolean;
-  full_description?: boolean;
-  developer?: boolean;
-  map?: boolean;
-};
+export async function fetchOffPlanUnitDetailClient(unitId: string, signal?: AbortSignal) {
+  return bffRequest<{ ok: true; unit: OffPlanUnitDetail }>({
+    path: `off-plan/unit/${encodeURIComponent(unitId)}`,
+    method: "GET",
+    signal,
+  });
+}
 
-/** Proxied REM PDF (`/api/off-plan/unit-pdf`). Omit `query` for server defaults. */
-export function buildUnitPdfUrl(
-  projectId: string,
-  unitId: string,
-  query?: UnitPdfQuery
+/** Generate a unit presentation / quotation PDF; resolves to the file URL. */
+export async function requestOffPlanUnitDocumentClient(
+  input: { kind: UnitDocumentKind; projectId: string; unitId: string } & UnitDocumentOptions
 ) {
-  const params = new URLSearchParams();
-  params.set("projectId", projectId);
-  params.set("unitId", unitId);
-  if (query?.currency) params.set("currency", query.currency);
-  if (query?.language) params.set("language", query.language);
-  if (query?.area) params.set("area", query.area);
-  if (query?.theme) params.set("theme", query.theme);
-  if (query?.design) params.set("design", query.design);
-  if (query?.watermark !== undefined)
-    params.set("watermark", String(query.watermark));
-  if (query?.full_description !== undefined)
-    params.set("full_description", String(query.full_description));
-  if (query?.developer !== undefined)
-    params.set("developer", String(query.developer));
-  if (query?.map !== undefined) params.set("map", String(query.map));
-  const q = params.toString();
-  return `/api/off-plan/unit-pdf?${q}`;
+  return bffRequest<{ ok: true; url: string }>({
+    path: "off-plan/unit-document",
+    method: "POST",
+    data: input,
+  });
 }
 
 export type OffPlanPresentationContext = {
@@ -259,6 +246,9 @@ export async function shareOffPlanProjectPostClient(input: {
   projectId: string;
   description?: string;
   visibility?: "public" | "connections";
+  scheduledAt?: string;
+  mentionedUserIds?: number[];
+  mentionedUsers?: Array<{ user_id: number; display_name: string; user_name: string }>;
 }) {
   return bffRequest<{ ok: true; id: number }>({
     path: "off-plan/share-post",

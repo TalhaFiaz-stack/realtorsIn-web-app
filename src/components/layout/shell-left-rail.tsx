@@ -14,11 +14,11 @@ export function ShellLeftRail({ member }: { member: PublicMember }) {
 
   return (
     <aside className="sticky top-14 hidden h-[calc(100dvh-3.5rem)] w-[var(--rail-width)] shrink-0 overflow-y-auto py-4 lg:block">
-      <div className="space-y-2">
+      <div className="space-y-3">
         <ShellProfileCard member={member} />
 
         <nav
-          className="rounded-lg border border-border bg-card py-1"
+          className="rounded-xl border border-border/70 bg-card p-1.5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]"
           aria-label="Shortcuts"
         >
           {leftRailNav.filter((item) => item.href !== "/connections").map(
@@ -48,12 +48,16 @@ export function ShellLeftRail({ member }: { member: PublicMember }) {
                         : pathname === item.href ||
                           pathname.startsWith(`${item.href}/`);
               const className = cn(
-                "flex w-full items-center gap-3 px-3 py-2.5 text-sm transition-colors",
+                "group flex h-10 w-full items-center gap-3 rounded-lg px-3 text-sm transition-colors",
                 active
-                  ? "bg-muted font-semibold text-foreground"
-                  : "text-foreground hover:bg-muted",
+                  ? "bg-primary/10 font-semibold text-primary"
+                  : "font-medium text-foreground/85 hover:bg-muted/70 hover:text-foreground",
                 item.comingSoon &&
                   "cursor-not-allowed opacity-55 hover:bg-transparent",
+              );
+              const iconClass = cn(
+                "h-[18px] w-[18px] shrink-0 transition-colors",
+                active ? "text-primary" : "text-muted-foreground group-hover:text-foreground",
               );
 
               if (item.comingSoon) {
@@ -64,7 +68,7 @@ export function ShellLeftRail({ member }: { member: PublicMember }) {
                     title="Coming soon"
                     aria-disabled="true"
                   >
-                    <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <Icon className={iconClass} />
                     <span className="locale-text truncate">{item.label}</span>
                   </span>
                 );
@@ -77,15 +81,18 @@ export function ShellLeftRail({ member }: { member: PublicMember }) {
                   className={className}
                   aria-current={active ? "page" : undefined}
                 >
-                  <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <Icon className={iconClass} />
                   <span className="locale-text truncate">{item.label}</span>
+                  {active ? (
+                    <span className="ms-auto h-1.5 w-1.5 rounded-full bg-primary" aria-hidden />
+                  ) : null}
                 </Link>
               );
             },
           )}
+          <div className="my-1.5 h-px bg-border/70" aria-hidden />
+          <ShellSignOutButton variant="row" />
         </nav>
-
-        <ShellSignOutButton />
       </div>
     </aside>
   );

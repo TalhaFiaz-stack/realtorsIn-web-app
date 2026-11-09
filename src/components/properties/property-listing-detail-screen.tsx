@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { PropertyListingDetailActions } from "@/components/properties/property-listing-detail-actions";
-import { PropertyListingShare } from "@/components/properties/property-listing-share";
 import { PropertyListingDetailView } from "@/components/properties/property-listing-detail-view";
 import { PropertyListingStatusControl } from "@/components/properties/property-listing-status-control";
 import { ShellBackRow } from "@/components/navigation/shell-back-row";
@@ -39,43 +37,37 @@ export function PropertyListingDetailScreen({
   });
 
   const listing = query.data;
+  const actionCard = listing ? (
+    <PropertyListingDetailActions
+      listing={listing}
+      statusControl={
+        <PropertyListingStatusControl
+          listing={listing}
+          remQueryRaw={remRaw ?? undefined}
+          size="sm"
+        />
+      }
+    />
+  ) : null;
 
   return (
-    <div className="w-full max-w-2xl space-y-5 pb-10">
-      <header className="space-y-4">
-        <ShellBackRow>
-          <OffPlanPillBackLink href="/properties">Properties</OffPlanPillBackLink>
-        </ShellBackRow>
-
-        {query.isLoading ? (
-          <div className="space-y-2 px-0.5">
-            <Skeleton className="h-7 w-3/4" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        ) : listing ? (
-          <div className="space-y-1 px-0.5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <h1 className="locale-text min-w-0 flex-1 text-2xl font-semibold leading-snug tracking-tight text-foreground sm:text-[1.65rem]">
-                {listing.title ?? "Listing"}
-              </h1>
-              <PropertyListingStatusControl
-                listing={listing}
-                remQueryRaw={remRaw ?? undefined}
-                size="md"
-              />
-            </div>
-          </div>
-        ) : null}
-      </header>
+    <div className="w-full max-w-5xl pb-10">
+      <ShellBackRow className="mb-4">
+        <OffPlanPillBackLink href="/properties">Properties</OffPlanPillBackLink>
+      </ShellBackRow>
 
       {query.isLoading ? (
-        <>
-          <PropertyListingDetailSkeleton />
-          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
-            <Skeleton className="mb-3 h-3 w-28" />
-            <Skeleton className="h-9 w-full max-w-xs" />
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="space-y-4">
+            <PropertyListingDetailSkeleton />
           </div>
-        </>
+          <div className="space-y-3 rounded-2xl border border-border bg-card p-5 shadow-sm">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-8 w-40" />
+            <Skeleton className="h-11 w-full rounded-full" />
+            <Skeleton className="h-10 w-full rounded-full" />
+          </div>
+        </div>
       ) : query.isError ? (
         <ErrorState
           title="Unable to load listing"
@@ -83,24 +75,15 @@ export function PropertyListingDetailScreen({
           onRetry={() => void query.refetch()}
         />
       ) : listing ? (
-        <>
-          <PropertyListingDetailView listing={listing} />
-          <div className="flex flex-wrap items-center gap-2">
-            <PropertyListingShare listing={listing} />
+        <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="min-w-0">
+            <PropertyListingDetailView
+              listing={listing}
+              afterHeader={<div className="lg:hidden">{actionCard}</div>}
+            />
           </div>
-          <PropertyListingDetailActions listing={listing} />
-
-          {listing.postId ? (
-            <p className="px-0.5 text-sm">
-              <Link
-                href={`/posts/${listing.postId}`}
-                className="font-medium text-primary hover:underline"
-              >
-                View feed post
-              </Link>
-            </p>
-          ) : null}
-        </>
+          <aside className="hidden lg:sticky lg:top-[4.5rem] lg:block">{actionCard}</aside>
+        </div>
       ) : null}
     </div>
   );

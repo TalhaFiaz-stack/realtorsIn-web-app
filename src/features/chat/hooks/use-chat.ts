@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import {
+  keepPreviousData,
   useInfiniteQuery,
   useMutation,
   useQuery,
@@ -10,7 +11,12 @@ import {
 import { showAppToast } from "@/lib/toast/app-toast";
 import {
   archiveConversationRequest,
+  blockUserRequest,
+  fetchBlockedUsers,
+  unblockUserRequest,
   deleteConversationRequest,
+  deleteMessageRequest,
+  editMessageRequest,
   emitTypingRequest,
   fetchChatUnread,
   fetchConversations,
@@ -19,6 +25,7 @@ import {
   markReadRequest,
   muteConversationRequest,
   pinConversationRequest,
+  reactToMessageRequest,
   sendDocumentRequest,
   sendImageRequest,
   sendMessageRequest,
@@ -26,6 +33,8 @@ import {
   uploadChatFileRequest,
 } from "@/features/chat/services/chat.client";
 import { ApiError } from "@/lib/api/errors";
+import { appendMessageToThread } from "@/features/chat/lib/thread-cache";
+import type { ChatMessage } from "@/features/chat/types/chat.types";
 import { normalizeNavBadgeCount } from "@/lib/navigation/nav-badge";
 import { useChatRealtimeContext } from "@/features/chat/hooks/chat-realtime-context";
 import {
@@ -86,6 +95,8 @@ export function useConversations(options?: {
     },
     refetchInterval: live ? false : CHAT_POLL_MS,
     refetchIntervalInBackground: false,
+    // Keep the current list on screen while a new search loads (no skeleton flash).
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -205,22 +216,37 @@ export function useStartConversation() {
 
 export function useSendMessage(conversationId: number) {
   const queryClient = useQueryClient();
-  const invalidate = () => {
-    void queryClient.invalidateQueries({
-      queryKey: ["chat", "messages", conversationId],
-    });
-    void queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
-  };
 
   return useMutation({
-    mutationFn: sendMessageRequest,
+    mutationFn: (input: {
+      receiverId: number;
+      messageContent: string;
+      /** Optimistic bubble to promote into the real message on success. */
+      optimistic?: ChatMessage;
+    }) =>
+      sendMessageRequest({
+        receiverId: input.receiverId,
+        messageContent: input.messageContent,
+      }),
     onSuccess: (result, variables) => {
+      // Promote the optimistic bubble in place: no refetch of every page,
+      // no flicker. The socket `message_sent` echo is deduped by id.
+      if (variables.optimistic) {
+        appendMessageToThread(queryClient, {
+          ...variables.optimistic,
+          id: result.message.id,
+          content: result.message.content,
+          createdAt: result.message.createdAt ?? variables.optimistic.createdAt,
+        });
+      } else {
+        void queryClient.invalidateQueries({ queryKey: ["chat", "messages", conversationId] });
+      }
       updateConversationPreview(queryClient, {
         conversationId,
         lastMessage: result.message.content,
         lastMessageAt: result.message.createdAt,
       });
-      invalidate();
+      void queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
     },
   });
 }
@@ -292,4 +318,89 @@ export function chatErrorMessage(error: unknown): string {
   if (error instanceof ApiError) return error.message;
   if (error instanceof Error) return error.message;
   return "Something went wrong";
+}
+
+/** Edit / react / delete a message (mobile `editMessage`, `reactToMessage`, `deleteMessage`). */
+export function useMessageActions(conversationId: number) {
+  const queryClient = useQueryClient();
+  const refresh = () => {
+    void queryClient.invalidateQueries({
+      queryKey: ["chat", "messages", conversationId],
+    });
+    void queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
+  };
+
+  const edit = useMutation({
+    mutationFn: editMessageRequest,
+    onSuccess: refresh,
+    onError: (error) => showAppToast.fromError(error, "Could not edit message"),
+  });
+  const react = useMutation({
+    mutationFn: reactToMessageRequest,
+    onSuccess: refresh,
+    onError: (error) => showAppToast.fromError(error, "Could not react"),
+  });
+  const remove = useMutation({
+    mutationFn: deleteMessageRequest,
+    onSuccess: refresh,
+    onError: (error) =>
+      showAppToast.fromError(error, "Could not delete message"),
+  });
+
+  return { edit, react, remove };
+}
+
+export const blockedUsersQueryKey = ["chat", "blocked"] as const;
+
+export function useBlockedUsers(enabled = true) {
+  return useQuery({
+    queryKey: blockedUsersQueryKey,
+    queryFn: ({ signal }) => fetchBlockedUsers(signal),
+    select: (data) => data.users,
+    enabled,
+    staleTime: 60_000,
+  });
+}
+
+/** Block / unblock (mobile `blockUser` / `unblockUser`). */
+export function useBlockActions() {
+  const queryClient = useQueryClient();
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: blockedUsersQueryKey });
+    void queryClient.invalidateQueries({ queryKey: ["chat", "conversations"] });
+  };
+  const block = useMutation({
+    mutationFn: blockUserRequest,
+    onSuccess: () => {
+      refresh();
+      showAppToast.success("User blocked", "They can no longer message you.");
+    },
+    onError: (error) => showAppToast.fromError(error, "Could not block user"),
+  });
+  const unblock = useMutation({
+    mutationFn: unblockUserRequest,
+    onSuccess: () => {
+      refresh();
+      showAppToast.success("User unblocked", "You can message each other again.");
+    },
+    onError: (error) => showAppToast.fromError(error, "Could not unblock user"),
+  });
+  return { block, unblock };
+}
+
+/** Warm a thread before it opens (hover / focus on the inbox row). */
+export function usePrefetchThread() {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (conversationId: number) => {
+      void queryClient.prefetchInfiniteQuery({
+        queryKey: ["chat", "messages", conversationId],
+        initialPageParam: 1,
+        queryFn: ({ signal }) => fetchMessages(conversationId, 1, signal),
+        // Don't refetch a thread that is already fresh in cache.
+        staleTime: 30_000,
+      });
+    },
+    [queryClient]
+  );
 }

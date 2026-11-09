@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Archive,
@@ -29,6 +29,7 @@ import {
   chatErrorMessage,
   useConversationActions,
   useConversations,
+  usePrefetchThread,
 } from "@/features/chat/hooks/use-chat";
 import { useChatRealtimeContext } from "@/features/chat/hooks/chat-realtime-context";
 import type { ConversationSummary } from "@/features/chat/types/chat.types";
@@ -43,10 +44,16 @@ export function ConversationsScreen({
 }) {
   const realtime = useChatRealtimeContext();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    // One request per pause in typing, not per keystroke.
+    const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [search]);
   const [showArchived, setShowArchived] = useState(false);
   const query = useConversations({
     realtimeConnected: realtime.connected,
-    search: search.trim() || undefined,
+    search: debouncedSearch || undefined,
   });
   const actions = useConversationActions();
   const { confirm } = useConfirm();
@@ -197,11 +204,14 @@ function ConversationRow({
   onDelete: () => void;
 }) {
   const unreadCount = selected ? 0 : item.unreadCount;
+  const prefetchThread = usePrefetchThread();
 
   return (
     <li className="group relative">
       <Link
         href={`/messages/${item.id}`}
+        onMouseEnter={() => prefetchThread(item.id)}
+        onFocus={() => prefetchThread(item.id)}
         className={cn(
           "flex items-center gap-3 border-s-[3px] px-3 py-3 pe-10 transition-colors hover:bg-muted/50",
           selected ? "border-s-primary bg-primary/5" : "border-s-transparent",

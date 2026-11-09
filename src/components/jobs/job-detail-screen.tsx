@@ -8,14 +8,13 @@ import { ShellBackRow } from "@/components/navigation/shell-back-row";
 import { JobDetailBody } from "@/components/jobs/job-detail-body";
 import { JobCardSkeleton } from "@/components/jobs/job-shimmers";
 import { ErrorState } from "@/components/states/error-state";
-import { Button } from "@/components/ui/button";
+import { Send } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  CharCount,
+  FormField,
+  FormGrid,
+  ProfileFormDialog,
+} from "@/components/profile/profile-form-dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { fetchSession } from "@/features/auth/services/auth.client";
@@ -73,6 +72,8 @@ export function JobDetailScreen({ jobId }: { jobId: number }) {
   }
 
   const loadedJob = job;
+  const emailInvalid =
+    contactEmail.trim().length > 0 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail.trim());
 
   const posterName =
     [loadedJob.poster?.firstName, loadedJob.poster?.lastName]
@@ -148,53 +149,59 @@ export function JobDetailScreen({ jobId }: { jobId: number }) {
         deletePending={remove.isPending}
       />
 
-      <Dialog open={applyOpen} onOpenChange={setApplyOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Apply to {loadedJob.title}</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Your profile may be shared with the poster. Add optional contact
-            details below.
-          </p>
-          <div className="space-y-3">
-            <Textarea
-              placeholder="Cover letter (optional)"
-              value={coverLetter}
-              onChange={(e) => setCoverLetter(e.target.value)}
-              rows={4}
-              className="resize-none"
-            />
+      <ProfileFormDialog
+        open={applyOpen}
+        onOpenChange={setApplyOpen}
+        icon={Send}
+        title={`Apply to ${loadedJob.title}`}
+        description={`${posterName} will see your RealtorsIn profile with this application.`}
+        size="sm"
+        saving={apply.isPending}
+        canSave={!emailInvalid}
+        saveLabel="Submit application"
+        onSave={() => void submitApply()}
+      >
+        <FormField
+          label="Cover letter"
+          htmlFor="apply-cover"
+          hint={<CharCount value={coverLetter} max={2000} />}
+        >
+          <Textarea
+            id="apply-cover"
+            placeholder="Why you're a great fit for this role (optional)"
+            value={coverLetter}
+            maxLength={2000}
+            onChange={(e) => setCoverLetter(e.target.value)}
+            rows={5}
+            className="resize-none"
+            autoFocus
+          />
+        </FormField>
+        <FormGrid>
+          <FormField
+            label="Contact email"
+            htmlFor="apply-email"
+            hint={emailInvalid ? <span className="text-destructive">Enter a valid email.</span> : undefined}
+          >
             <Input
+              id="apply-email"
               type="email"
-              placeholder="Contact email"
+              placeholder="you@example.com"
               value={contactEmail}
               onChange={(e) => setContactEmail(e.target.value)}
             />
+          </FormField>
+          <FormField label="Contact phone" htmlFor="apply-phone">
             <Input
-              placeholder="Contact phone"
+              id="apply-phone"
+              type="tel"
+              placeholder="+971 50 000 0000"
               value={contactPhone}
               onChange={(e) => setContactPhone(e.target.value)}
             />
-          </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => setApplyOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              disabled={apply.isPending}
-              onClick={() => void submitApply()}
-            >
-              {apply.isPending ? "Submitting…" : "Submit application"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </FormField>
+        </FormGrid>
+      </ProfileFormDialog>
     </div>
   );
 }

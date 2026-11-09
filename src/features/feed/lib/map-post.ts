@@ -152,6 +152,10 @@ function mapMentions(raw: unknown): PostMention[] {
     .filter(Boolean) as PostMention[];
 }
 
+/**
+ * @param depth Repost nesting level (internal). Never pass this function
+ * directly to `Array.map` — it would receive the item index as `depth`.
+ */
 export function mapFeedPost(raw: unknown, depth = 0): FeedPost | null {
   const row = asRecord(raw);
   if (!row) return null;
@@ -228,7 +232,7 @@ export function mapFeedPage(payload: unknown): FeedPage {
   const data = asRecord(root?.data) ?? root;
   const list = Array.isArray(data?.data) ? data.data : [];
   const posts = list
-    .map(mapFeedPost)
+    .map((raw) => mapFeedPost(raw))
     .filter((p): p is FeedPost => Boolean(p));
 
   const page = asNumber(data?.current_page, 1);

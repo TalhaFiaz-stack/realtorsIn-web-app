@@ -49,6 +49,7 @@ export type ProfileCertificate = {
   issueDate: string | null;
   expiryDate: string | null;
   certificateNumber: string | null;
+  description: string | null;
   skillIds: number[];
   imageUrl: string | null;
 };

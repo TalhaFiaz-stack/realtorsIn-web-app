@@ -1,4 +1,5 @@
 import { bffRequest } from "@/lib/api/client";
+import { forgetWebPushToken } from "@/features/push/services/web-push.client";
 import type { PublicMember, SessionView } from "@/features/auth/types/auth.types";
 
 type AuthSuccess = {
@@ -80,8 +81,22 @@ export async function completeProfileRequest(
 }
 
 export async function logoutRequest() {
+  // Server logout clears this profile's web push token (device: "web");
+  // forget it locally so the next sign-in registers this browser again.
+  forgetWebPushToken();
   return bffRequest<{ ok: true }>({
     path: "auth/logout",
     method: "POST",
+  });
+}
+
+export async function socialSignInRequest(
+  provider: "google" | "facebook",
+  payload: Record<string, string | undefined>
+) {
+  return bffRequest<AuthSuccess>({
+    path: `auth/social/${provider}`,
+    method: "POST",
+    data: payload,
   });
 }

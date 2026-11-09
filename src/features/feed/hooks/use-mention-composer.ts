@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { fetchConnections } from "@/features/network/services/network.client";
 import type { NetworkPerson } from "@/features/network/types/network.types";
 import {
@@ -52,37 +53,33 @@ export function useMentionComposer(options: {
   const metaByIdRef = useRef<
     Map<number, { user_id: number; display_name: string; user_name: string }>
   >(new Map());
-  const [catalog, setCatalog] = useState<MentionCandidate[]>([]);
-  const [catalogLoading, setCatalogLoading] = useState(false);
+  // Shared, cached connection list (post composer + every comment box).
+  const catalogQuery = useQuery({
+    queryKey: ["mention-catalog"],
+    queryFn: loadConnectionsCatalog,
+    enabled,
+    staleTime: 5 * 60_000,
+    gcTime: 30 * 60_000,
+    retry: 2,
+  });
+  const catalog = useMemo(() => catalogQuery.data ?? [], [catalogQuery.data]);
+  const catalogLoading = catalogQuery.isPending && enabled;
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [displayLabels, setDisplayLabels] = useState<string[]>([]);
-
-  useEffect(() => {
-    if (!enabled) return;
-    let cancelled = false;
-    setCatalogLoading(true);
-    void loadConnectionsCatalog()
-      .then((rows) => {
-        if (!cancelled) setCatalog(rows);
-      })
-      .catch(() => {
-        if (!cancelled) setCatalog([]);
-      })
-      .finally(() => {
-        if (!cancelled) setCatalogLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled]);
 
   const suggestions = useMemo(() => {
     if (mentionQuery === null) return [];
     return filterMentionCandidates(catalog, mentionQuery);
   }, [catalog, mentionQuery]);
 
+  // Text at the moment the list was dismissed (Esc/blur). Selection events
+  // fire again on key-up, so stay closed until the text actually changes.
+  const dismissedTextRef = useRef<string | null>(null);
+
   const syncQueryFromCursor = useCallback(
     (text: string, cursor: number) => {
+      if (dismissedTextRef.current !== null && dismissedTextRef.current === text) return;
+      dismissedTextRef.current = null;
       setMentionQuery(detectMentionQuery(text, cursor));
     },
     []
@@ -141,6 +138,12 @@ export function useMentionComposer(options: {
     [onChange, value]
   );
 
+  /** Close the suggestion list (Esc / blur) without touching the text. */
+  const dismiss = useCallback(() => {
+    dismissedTextRef.current = textareaRef.current?.value ?? null;
+    setMentionQuery(null);
+  }, []);
+
   const resetMentions = useCallback(() => {
     mentionedIdsRef.current = new Set();
     metaByIdRef.current = new Map();
@@ -170,9 +173,12 @@ export function useMentionComposer(options: {
     mentionQuery: mentionQuery ?? "",
     suggestions,
     catalogLoading,
+    catalogError: catalogQuery.isError,
+    retryCatalog: () => void catalogQuery.refetch(),
     displayLabels,
     handleChange,
     handleSelect,
+    dismiss,
     syncQueryFromCursor,
     resetMentions,
     getMentionPayload,

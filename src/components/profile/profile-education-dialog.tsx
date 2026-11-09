@@ -1,17 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { GraduationCap } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  CharCount,
+  FormField,
+  FormGrid,
+  FormSection,
+  FormToggleRow,
+  ProfileFormDialog,
+} from "@/components/profile/profile-form-dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   mutationErrorMessage,
@@ -69,135 +68,143 @@ export function ProfileEducationDialog({
     setError(null);
   }, [open, initial]);
 
+  const endBeforeStart =
+    !isCurrentlyStudying && Boolean(endDate) && Boolean(startDate) && endDate < startDate;
+  const canSave =
+    degree.trim().length >= 2 && school.trim().length >= 2 && Boolean(startDate) && !endBeforeStart;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {initial ? "Edit education" : "Add education"}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <Field label="School *">
-            <Input value={school} onChange={(e) => setSchool(e.target.value)} />
-          </Field>
-          <Field label="Degree *">
-            <Input value={degree} onChange={(e) => setDegree(e.target.value)} />
-          </Field>
-          <Field label="Field of study">
+    <ProfileFormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={GraduationCap}
+      title={initial ? "Edit education" : "Add education"}
+      description="Schools, degrees and real estate courses you've completed."
+      error={error}
+      saving={mutation.isPending}
+      canSave={canSave}
+      footerStart={<><span className="text-destructive">*</span> Required</>}
+      onSave={() => {
+        setError(null);
+        mutation.mutate(
+          {
+            id: initial?.id ?? null,
+            degree: degree.trim(),
+            school: school.trim(),
+            fieldOfStudy: fieldOfStudy.trim() || "General",
+            startDate,
+            endDate: isCurrentlyStudying ? null : endDate || null,
+            isCurrentlyStudying,
+            location: location.trim(),
+            description: description.trim(),
+            skillIds,
+            newSkills,
+            imageFiles,
+          },
+          {
+            onSuccess: () => onOpenChange(false),
+            onError: (err) => setError(mutationErrorMessage(err)),
+          }
+        );
+      }}
+    >
+      <FormSection title="School">
+        <FormField label="School" required htmlFor="edu-school" hint={school && school.trim().length < 2 ? "At least 2 characters." : undefined}>
+          <Input
+            id="edu-school"
+            value={school}
+            onChange={(e) => setSchool(e.target.value)}
+            placeholder="e.g. Dubai Real Estate Institute"
+            autoFocus
+          />
+        </FormField>
+        <FormGrid>
+          <FormField label="Degree" required htmlFor="edu-degree">
             <Input
+              id="edu-degree"
+              value={degree}
+              onChange={(e) => setDegree(e.target.value)}
+              placeholder="e.g. Bachelor's"
+            />
+          </FormField>
+          <FormField label="Field of study" htmlFor="edu-field">
+            <Input
+              id="edu-field"
               value={fieldOfStudy}
               onChange={(e) => setFieldOfStudy(e.target.value)}
+              placeholder="e.g. Business Administration"
             />
-          </Field>
-          <Field label="Start date *">
+          </FormField>
+        </FormGrid>
+        <FormField label="Location" htmlFor="edu-location">
+          <Input
+            id="edu-location"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            placeholder="e.g. Dubai, UAE"
+          />
+        </FormField>
+      </FormSection>
+
+      <FormSection title="Dates">
+        <FormToggleRow
+          checked={isCurrentlyStudying}
+          onChange={setIsCurrentlyStudying}
+          label="I currently study here"
+        />
+        <FormGrid>
+          <FormField label="Start date" required htmlFor="edu-start">
             <Input
+              id="edu-start"
               type="date"
               value={startDate}
               onChange={(e) => setStartDate(e.target.value)}
             />
-          </Field>
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={isCurrentlyStudying}
-              onCheckedChange={(v) => setIsCurrentlyStudying(v === true)}
-            />
-            I currently study here
-          </label>
+          </FormField>
           {!isCurrentlyStudying ? (
-            <Field label="End date">
+            <FormField
+              label="End date (or expected)"
+              htmlFor="edu-end"
+              hint={endBeforeStart ? <span className="text-destructive">End date must be after the start date.</span> : undefined}
+            >
               <Input
+                id="edu-end"
                 type="date"
                 value={endDate}
+                min={startDate || undefined}
                 onChange={(e) => setEndDate(e.target.value)}
               />
-            </Field>
+            </FormField>
           ) : null}
-          <Field label="Location">
-            <Input
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
-          </Field>
-          <Field label="Description">
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </Field>
-          <ProfileSectionSkillsField
-            skills={skills}
-            selectedSkillIds={skillIds}
-            onSelectedSkillIdsChange={setSkillIds}
-            newSkillNames={newSkills}
-            onNewSkillNamesChange={setNewSkills}
-          />
-          <ProfileSectionImagesField
-            existingUrls={initial?.imageUrls ?? []}
-            files={imageFiles}
-            onFilesChange={setImageFiles}
-          />
-        </div>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            disabled={
-              mutation.isPending ||
-              degree.trim().length < 2 ||
-              school.trim().length < 2 ||
-              !startDate
-            }
-            onClick={() => {
-              setError(null);
-              mutation.mutate(
-                {
-                  id: initial?.id ?? null,
-                  degree: degree.trim(),
-                  school: school.trim(),
-                  fieldOfStudy: fieldOfStudy.trim() || "General",
-                  startDate,
-                  endDate: endDate || null,
-                  isCurrentlyStudying,
-                  location: location.trim(),
-                  description: description.trim(),
-                  skillIds,
-                  newSkills,
-                  imageFiles,
-                },
-                {
-                  onSuccess: () => onOpenChange(false),
-                  onError: (err) => setError(mutationErrorMessage(err)),
-                }
-              );
-            }}
-          >
-            {mutation.isPending ? "Saving…" : "Save"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+        </FormGrid>
+      </FormSection>
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
-    </div>
+      <FormSection title="Details">
+        <FormField label="Description" htmlFor="edu-description" hint={<CharCount value={description} max={2000} />}>
+          <Textarea
+            id="edu-description"
+            value={description}
+            maxLength={2000}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Activities, honours, coursework…"
+            className="min-h-24"
+          />
+        </FormField>
+        <ProfileSectionSkillsField
+          skills={skills}
+          selectedSkillIds={skillIds}
+          onSelectedSkillIdsChange={setSkillIds}
+          newSkillNames={newSkills}
+          onNewSkillNamesChange={setNewSkills}
+        />
+        <ProfileSectionImagesField
+          label="Media"
+          existingUrls={initial?.imageUrls ?? []}
+          files={imageFiles}
+          onFilesChange={setImageFiles}
+          hint="Add your diploma, transcript or campus photos."
+        />
+      </FormSection>
+    </ProfileFormDialog>
   );
 }

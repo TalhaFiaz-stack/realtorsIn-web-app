@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CreatePostDialog } from "@/components/feed/create-post-dialog";
 import { FeedCreatePostCard } from "@/components/feed/feed-create-post-card";
+import { FeedActiveFiltersBar } from "@/components/feed/feed-active-filters-bar";
+import { FeedFilterDialog } from "@/components/feed/feed-filter-dialog";
 import { FeedListRow } from "@/components/feed/feed-list-row";
 import { StoriesRail } from "@/components/stories/stories-rail";
 import { PostRepostDialog } from "@/components/feed/post-repost-dialog";
@@ -194,8 +196,12 @@ export function FeedScreen({
     feedRows.length,
   ]);
 
+  const filtered = !isDefaultFeedFilters(filters);
+  const [filterOpen, setFilterOpen] = useState(false);
+
   const composers = (
     <div className="space-y-3 px-4 md:px-0">
+      <FeedActiveFiltersBar onEdit={() => setFilterOpen(true)} />
       <FeedCreatePostCard
         displayName={composerDisplayName}
         avatarUrl={composerAvatarUrl}
@@ -215,6 +221,8 @@ export function FeedScreen({
   );
 
   const composeDialog = (
+    <>
+    <FeedFilterDialog open={filterOpen} onOpenChange={setFilterOpen} />
     <CreatePostDialog
       open={composeOpen}
       onOpenChange={(open) => {
@@ -228,6 +236,7 @@ export function FeedScreen({
         window.scrollTo({ top: 0, behavior: "smooth" });
       }}
     />
+    </>
   );
 
   if (isLoading) {
@@ -276,12 +285,21 @@ export function FeedScreen({
         <div className="space-y-3">
           {composers}
           <div className="px-4 md:px-0">
-            <EmptyState
-              title="Your feed is quiet"
-              description="Follow professionals and share your first update to bring this space to life."
-              actionLabel="Create a post"
-              onAction={() => openCompose()}
-            />
+            {filtered ? (
+              <EmptyState
+                title="No posts match these filters"
+                description="Try another content type or clear the filters to see everything."
+                actionLabel="Clear filters"
+                onAction={() => router.push("/feed")}
+              />
+            ) : (
+              <EmptyState
+                title="Your feed is quiet"
+                description="Follow professionals and share your first update to bring this space to life."
+                actionLabel="Create a post"
+                onAction={() => openCompose()}
+              />
+            )}
           </div>
         </div>
         {composeDialog}

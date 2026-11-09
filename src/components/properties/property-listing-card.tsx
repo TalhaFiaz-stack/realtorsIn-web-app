@@ -2,16 +2,17 @@
 
 import Link from "next/link";
 import {
+  ArrowRight,
   Bath,
   BedDouble,
   Banknote,
   ImageIcon,
   MapPin,
   Ruler,
+  Sparkles,
 } from "lucide-react";
 import { RemoteImg } from "@/components/shared/remote-img";
 import { PropertyListingStatusControl } from "@/components/properties/property-listing-status-control";
-import { Button } from "@/components/ui/button";
 import { formatMatchedAttributes } from "@/features/properties/lib/format-matched-attributes";
 import { formatListingTypeLabel } from "@/features/properties/lib/map-social-property";
 import {
@@ -238,15 +239,20 @@ export function PropertyListingCard({
       </div>
 
       {showMatchesButton ? (
-        <div className="border-t border-border/80 px-3.5 py-2">
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 w-full rounded-lg text-xs font-semibold"
-            asChild
+        <div className="border-t border-border/80 px-3.5 py-2.5">
+          <Link
+            href={matchesHref}
+            className="group/match flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-primary/10 text-[13px] font-semibold text-primary transition-colors hover:bg-primary hover:text-primary-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
           >
-            <Link href={matchesHref}>Find matches</Link>
-          </Button>
+            <Sparkles className="h-4 w-4" aria-hidden />
+            {listing.type === "buy" || listing.type === "rent_in"
+              ? "Find matching properties"
+              : "Find matching clients"}
+            <ArrowRight
+              className="h-3.5 w-3.5 transition-transform group-hover/match:translate-x-0.5"
+              aria-hidden
+            />
+          </Link>
         </div>
       ) : null}
     </article>

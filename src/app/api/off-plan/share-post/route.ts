@@ -9,6 +9,19 @@ const bodySchema = z.object({
   projectId: z.string().min(1),
   description: z.string().max(5000).optional(),
   visibility: z.enum(["public", "connections"]).default("connections"),
+  /** Optional — same fields the regular composer sends. */
+  scheduledAt: z.string().datetime().optional(),
+  mentionedUserIds: z.array(z.number().int().positive()).max(50).optional(),
+  mentionedUsers: z
+    .array(
+      z.object({
+        user_id: z.number().int().positive(),
+        display_name: z.string().max(200),
+        user_name: z.string().max(200),
+      })
+    )
+    .max(50)
+    .optional(),
 });
 
 export async function POST(request: Request) {
@@ -32,6 +45,13 @@ export async function POST(request: Request) {
     form.append("description", parsed.data.description?.trim() ?? "");
     form.append("visibility", parsed.data.visibility);
     form.append("project", JSON.stringify(projectData));
+    if (parsed.data.scheduledAt) form.append("scheduled_at", parsed.data.scheduledAt);
+    if (parsed.data.mentionedUserIds?.length) {
+      form.append("mentioned_user_ids", JSON.stringify(parsed.data.mentionedUserIds));
+    }
+    if (parsed.data.mentionedUsers?.length) {
+      form.append("mentioned_users", JSON.stringify(parsed.data.mentionedUsers));
+    }
 
     const created = await createPostMultipart(form);
     return jsonOk({ ok: true, id: created.id }, { status: 201 });

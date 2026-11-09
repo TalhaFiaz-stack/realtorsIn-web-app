@@ -11,6 +11,7 @@ import {
   reactToStoryRequest,
   sendStoryReplyRequest,
 } from "@/features/stories/services/stories.client";
+import type { StoriesFeed } from "@/features/stories/types/story.types";
 import { ApiError } from "@/lib/api/errors";
 
 export const storiesFeedKey = ["stories", "feed"] as const;
@@ -49,10 +50,26 @@ export function useMarkStoryViewed() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (storyId: number) => markStoryViewedRequest(storyId),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: storiesFeedKey });
+    // Patch the cache instead of refetching: the ring arc greys out at once,
+    // and the open viewer isn't disturbed by a list refresh mid-playback.
+    onMutate: (storyId) => {
+      queryClient.setQueryData<StoriesFeed>(storiesFeedKey, (current) =>
+        current ? markStoryViewedInFeed(current, storyId) : current
+      );
     },
   });
+}
+
+/** Pure helper (exported for tests): mark one story seen and recompute `hasUnseen`. */
+export function markStoryViewedInFeed(feed: StoriesFeed, storyId: number): StoriesFeed {
+  let changed = false;
+  const groups = feed.groups.map((group) => {
+    if (!group.stories.some((s) => s.id === storyId && !s.hasViewed)) return group;
+    changed = true;
+    const stories = group.stories.map((s) => (s.id === storyId ? { ...s, hasViewed: true } : s));
+    return { ...group, stories, hasUnseen: stories.some((s) => !s.hasViewed) };
+  });
+  return changed ? { ...feed, groups } : feed;
 }
 
 export function useReactToStory() {

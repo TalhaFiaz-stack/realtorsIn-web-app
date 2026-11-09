@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
 import { formatNavBadgeLabel, navBadgeFromCount } from "@/lib/navigation/nav-badge";
@@ -24,26 +25,31 @@ export function ShellNavLink({
 
   const content = (
     <>
-      <span className="relative inline-flex">
+      <span
+        className={cn(
+          "relative inline-flex h-8 w-12 items-center justify-center rounded-full transition-colors",
+          active ? "bg-primary/10 text-primary" : "group-hover:bg-muted"
+        )}
+      >
         <Icon
-          className={cn("h-6 w-6", active ? "stroke-[1.75]" : "stroke-[1.5]")}
+          className={cn("h-[22px] w-[22px]", active ? "stroke-[2]" : "stroke-[1.6]")}
           aria-hidden
         />
         {badgeCount != null ? (
-          <span className="absolute -right-2 -top-1.5 inline-flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground">
+          <span className="absolute -top-0.5 end-1 inline-flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-2 ring-card">
             {formatNavBadgeLabel(badgeCount)}
           </span>
         ) : null}
       </span>
-      <span className="locale-text leading-none">{label}</span>
+      <span className="locale-text text-[11px] leading-none">{label}</span>
     </>
   );
 
   const classes = cn(
-    "relative hidden h-full min-w-[4.75rem] flex-col items-center justify-center gap-1 px-2 text-[12px] transition-colors md:flex",
+    "group relative hidden h-full min-w-[4.5rem] flex-col items-center justify-center gap-0.5 px-1.5 transition-colors md:flex",
     active
-      ? "font-semibold text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-foreground"
-      : "font-normal text-muted-foreground hover:text-foreground",
+      ? "font-semibold text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-t-full after:bg-primary"
+      : "font-medium text-muted-foreground hover:text-foreground",
     comingSoon && "cursor-not-allowed opacity-45 hover:text-muted-foreground",
     className
   );
@@ -69,3 +75,52 @@ export function ShellNavLink({
     </Link>
   );
 }
+
+/**
+ * Same look as `ShellNavLink`, rendered as a button (e.g. the bell that opens
+ * the notifications popup). Forward-ref so Radix triggers can use `asChild`.
+ */
+export const ShellNavButton = forwardRef<
+  HTMLButtonElement,
+  {
+    label: string;
+    icon: LucideIcon;
+    active?: boolean;
+    open?: boolean;
+    badge?: number;
+    className?: string;
+  } & React.ButtonHTMLAttributes<HTMLButtonElement>
+>(function ShellNavButton({ label, icon: Icon, active, open, badge, className, ...rest }, ref) {
+  const badgeCount = navBadgeFromCount(badge);
+  const highlighted = active || open;
+  return (
+    <button
+      ref={ref}
+      type="button"
+      aria-label={badgeCount != null ? `${label}, ${badgeCount} unread` : label}
+      className={cn(
+        "group relative hidden h-full min-w-[4.5rem] flex-col items-center justify-center gap-0.5 px-1.5 transition-colors focus-visible:outline-none md:flex",
+        highlighted
+          ? "font-semibold text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-t-full after:bg-primary"
+          : "font-medium text-muted-foreground hover:text-foreground",
+        className
+      )}
+      {...rest}
+    >
+      <span
+        className={cn(
+          "relative inline-flex h-8 w-12 items-center justify-center rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40",
+          highlighted ? "bg-primary/10 text-primary" : "group-hover:bg-muted"
+        )}
+      >
+        <Icon className={cn("h-[22px] w-[22px]", highlighted ? "stroke-[2]" : "stroke-[1.6]")} aria-hidden />
+        {badgeCount != null ? (
+          <span className="absolute -top-0.5 end-1 inline-flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-2 ring-card">
+            {formatNavBadgeLabel(badgeCount)}
+          </span>
+        ) : null}
+      </span>
+      <span className="locale-text text-[11px] leading-none">{label}</span>
+    </button>
+  );
+});

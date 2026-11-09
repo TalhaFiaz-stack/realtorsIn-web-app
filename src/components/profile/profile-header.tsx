@@ -116,7 +116,7 @@ export function ProfileHeader({
               type="button"
               variant="outline"
               size="sm"
-              className="hidden h-9 sm:inline-flex"
+              className="hidden h-9 rounded-full sm:inline-flex"
               onClick={onEditIntro}
             >
               <Pencil className="mr-1.5 h-3.5 w-3.5" />
@@ -136,7 +136,8 @@ export function ProfileHeader({
               >
                 <StoryAvatarRing
                   hasUnseen={storyGroup.hasUnseen}
-                  className="h-[94px] w-[94px]"
+                  stories={storyGroup.stories}
+                  className="h-[98px] w-[98px]"
                 >
                   <div className="h-[90px] w-[90px] overflow-hidden rounded-full border-2 border-card bg-muted shadow-sm">
                     <Avatar className="h-full w-full rounded-full">
@@ -219,36 +220,41 @@ export function ProfileHeader({
           </div>
 
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-sm">
-            <StatLink value={profile.connectionsCount} label="connections" />
+            <StatLink
+              value={profile.connectionsCount}
+              label={profile.connectionsCount === 1 ? "connection" : "connections"}
+              href={profile.isOwn ? "/connections" : undefined}
+            />
             <StatLink value={profile.postsCount} label="posts" />
             <StatLink value={profile.likesCount} label="likes" />
           </div>
 
           {profile.isOwn ? (
-            <div className="flex flex-wrap gap-2 pt-1">
-              <Button type="button" size="sm" onClick={onOpenTo}>
+            <div className="flex flex-wrap gap-2 pt-1.5">
+              <Button type="button" size="sm" className="h-9 rounded-full px-4" onClick={onOpenTo}>
                 Open to
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
+                className="h-9 rounded-full border-primary/60 px-4 text-primary hover:bg-primary/10 hover:text-primary"
                 onClick={onAddSection}
               >
-                <Plus className="mr-1.5 h-4 w-4" />
+                <Plus className="h-4 w-4" />
                 Add section
               </Button>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                className="sm:hidden"
+                className="h-9 rounded-full px-4 sm:hidden"
                 onClick={onEditIntro}
               >
-                <Pencil className="mr-1.5 h-4 w-4" />
+                <Pencil className="h-4 w-4" />
                 Edit
               </Button>
-              <Button asChild variant="outline" size="sm">
+              <Button asChild variant="outline" size="sm" className="h-9 rounded-full px-4">
                 <Link href="/create">Create post</Link>
               </Button>
             </div>
@@ -273,11 +279,27 @@ export function ProfileHeader({
   );
 }
 
-function StatLink({ value, label }: { value: number; label: string }) {
-  return (
-    <span className="text-muted-foreground">
-      <span className="font-semibold tabular-nums text-foreground">{value}</span>{" "}
+function StatLink({
+  value,
+  label,
+  href,
+}: {
+  value: number;
+  label: string;
+  href?: string;
+}) {
+  const body = (
+    <>
+      <span className="font-semibold tabular-nums text-foreground">{value.toLocaleString()}</span>{" "}
       {label}
-    </span>
+    </>
   );
+  if (href) {
+    return (
+      <Link href={href} className="text-muted-foreground hover:text-primary hover:underline">
+        {body}
+      </Link>
+    );
+  }
+  return <span className="text-muted-foreground">{body}</span>;
 }

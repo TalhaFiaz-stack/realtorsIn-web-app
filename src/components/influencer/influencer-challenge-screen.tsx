@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useCreatePostComposer } from "@/components/feed/create-post-provider";
+
 import { InfluencerChallengeBody } from "@/components/influencer/influencer-challenge-body";
 import { InfluencerChallengeSkeleton } from "@/components/influencer/influencer-challenge-skeleton";
 import { ErrorState } from "@/components/states/error-state";
@@ -12,7 +13,7 @@ import {
 import { showAppToast } from "@/lib/toast/app-toast";
 
 export function InfluencerChallengeScreen() {
-  const router = useRouter();
+  const { openComposer } = useCreatePostComposer();
   const statusQuery = useInfluencerStatus();
   const { startChallenge } = useInfluencerMutations();
 
@@ -26,7 +27,7 @@ export function InfluencerChallengeScreen() {
         "Challenge started",
         "Post videos from Create — up to the daily cap counts toward your badge."
       );
-      router.push("/create");
+      openComposer("video");
     } catch (error) {
       showAppToast.fromError(error, "Could not start challenge");
     }

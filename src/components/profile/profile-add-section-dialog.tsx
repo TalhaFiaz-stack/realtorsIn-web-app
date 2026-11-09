@@ -1,11 +1,8 @@
 "use client";
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Award, BriefcaseBusiness, ChevronRight, GraduationCap, LayoutList, Sparkles } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import { ProfileFormDialog } from "@/components/profile/profile-form-dialog";
 
 export type ProfileAddSectionTarget =
   | "position"
@@ -17,26 +14,36 @@ const ITEMS: Array<{
   id: ProfileAddSectionTarget;
   title: string;
   description: string;
+  icon: LucideIcon;
+  tone: string;
 }> = [
   {
     id: "position",
-    title: "Add position",
-    description: "Work experience and current role",
+    title: "Experience",
+    description: "Roles, agencies and your current position",
+    icon: BriefcaseBusiness,
+    tone: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
   },
   {
     id: "education",
-    title: "Add education",
-    description: "Schools, degrees, and courses",
-  },
-  {
-    id: "skill",
-    title: "Add skill",
-    description: "Professional skills on your profile",
+    title: "Education",
+    description: "Schools, degrees and courses",
+    icon: GraduationCap,
+    tone: "bg-violet-500/10 text-violet-600 dark:text-violet-400",
   },
   {
     id: "certificate",
-    title: "Add license & certification",
-    description: "Licenses and certificates",
+    title: "License & certification",
+    description: "RERA, DLD and other credentials",
+    icon: Award,
+    tone: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+  },
+  {
+    id: "skill",
+    title: "Skill",
+    description: "Professional skills clients search for",
+    icon: Sparkles,
+    tone: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   },
 ];
 
@@ -50,28 +57,36 @@ export function ProfileAddSectionDialog({
   onSelect: (target: ProfileAddSectionTarget) => void;
 }) {
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>Add section</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-2">
-          {ITEMS.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className="locale-text w-full rounded-xl border border-border px-4 py-3 text-start transition hover:bg-muted/50"
-              onClick={() => {
-                onOpenChange(false);
-                onSelect(item.id);
-              }}
-            >
-              <p className="font-medium text-foreground">{item.title}</p>
-              <p className="text-sm text-muted-foreground">{item.description}</p>
-            </button>
-          ))}
-        </div>
-      </DialogContent>
-    </Dialog>
+    <ProfileFormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={LayoutList}
+      title="Add to profile"
+      description="Complete profiles get more views and connection requests."
+      size="sm"
+    >
+      <div className="-mx-1 space-y-1">
+        {ITEMS.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className="locale-text group flex w-full items-center gap-3 rounded-xl px-3 py-3 text-start transition-colors hover:bg-muted/60"
+            onClick={() => {
+              onOpenChange(false);
+              onSelect(item.id);
+            }}
+          >
+            <span className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${item.tone}`}>
+              <item.icon className="h-5 w-5" aria-hidden />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-foreground">{item.title}</span>
+              <span className="block text-xs text-muted-foreground">{item.description}</span>
+            </span>
+            <ChevronRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-0.5" aria-hidden />
+          </button>
+        ))}
+      </div>
+    </ProfileFormDialog>
   );
 }

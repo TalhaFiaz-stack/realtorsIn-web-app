@@ -14,7 +14,7 @@ import {
 import type { LatLngBoundsExpression } from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "./off-plan-map.css";
-import { OffPlanMapLegend } from "@/components/listings/off-plan-map-legend";
+import { OffPlanMapTopStart } from "@/components/listings/off-plan-map-legend";
 import { OffPlanMapPopupCard } from "@/components/listings/off-plan-map-popup-card";
 import type { OffPlanDistrict, OffPlanProjectSummary } from "@/features/off-plan/types/off-plan.types";
 import { buildDistrictColorMap } from "@/features/off-plan/lib/district-map-colors";
@@ -150,6 +150,7 @@ export function OffPlanMapView({
   selectedProject,
   onOpenProject,
   className,
+  overlayStart,
 }: {
   projects: OffPlanProjectSummary[];
   districts: OffPlanDistrict[];
@@ -160,6 +161,7 @@ export function OffPlanMapView({
   selectedProject?: OffPlanProjectSummary | null;
   onOpenProject?: () => void;
   className?: string;
+  overlayStart?: React.ReactNode;
 }) {
   const [region, setRegion] = useState<MapRegion>({
     latitude: DEFAULT_CENTER[0],
@@ -214,11 +216,11 @@ export function OffPlanMapView({
   return (
     <div
       className={cn(
-        "off-plan-map-leaflet relative h-[min(70vh,520px)] w-full overflow-hidden rounded-xl border border-border",
+        "off-plan-map-leaflet relative isolate h-[min(70vh,520px)] w-full overflow-hidden rounded-xl border border-border",
         className
       )}
     >
-      <OffPlanMapLegend />
+      <OffPlanMapTopStart leading={overlayStart} />
       <MapContainer
         center={DEFAULT_CENTER}
         zoom={DEFAULT_ZOOM}

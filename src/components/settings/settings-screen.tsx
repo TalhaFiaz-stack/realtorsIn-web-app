@@ -1,7 +1,9 @@
 "use client";
 
 import {
+  Ban,
   Bell,
+  Compass,
   Globe,
   Palette,
   Shield,
@@ -29,7 +31,7 @@ export function SettingsScreen() {
       <SettingsNavRow
         href="/settings/notifications"
         icon={Bell}
-        title={t("Notification Settings")}
+        title={t("Notification settings")}
         subtitle={t("Alerts, messages, and activity updates")}
         iconClassName="bg-amber-500/10"
       />
@@ -59,6 +61,14 @@ export function SettingsScreen() {
       />
       <div className="border-t border-border" />
       <SettingsNavRow
+        href="/settings/blocked"
+        icon={Ban}
+        title={t("Blocked users")}
+        subtitle={t("Members you blocked in messages")}
+        iconClassName="bg-rose-500/10"
+      />
+      <div className="border-t border-border" />
+      <SettingsNavRow
         href="/settings/broker-verification"
         icon={ShieldCheck}
         title={t("Broker verification")}
@@ -69,7 +79,7 @@ export function SettingsScreen() {
       <SettingsNavRow
         href="/settings/account"
         icon={UserCog}
-        title={t("Account Management")}
+        title={t("Account management")}
         subtitle={t("Deletion requests and permanent removal")}
         iconClassName="bg-rose-500/10"
       />
@@ -77,7 +87,7 @@ export function SettingsScreen() {
       <SettingsNavRow
         href="/invite"
         icon={UserRound}
-        title={t("Invite Friends")}
+        title={t("Invite friends")}
         subtitle={t("Refer colleagues and earn the Connector Badge")}
         iconClassName="bg-emerald-500/10"
       />
@@ -85,9 +95,17 @@ export function SettingsScreen() {
       <SettingsNavRow
         href="/growth/influencer"
         icon={Sparkles}
-        title={t("Influencer Challenge")}
+        title={t("Influencer challenge")}
         subtitle={t("Post videos to earn the Influencer Badge")}
         iconClassName="bg-violet-500/10"
+      />
+      <div className="border-t border-border" />
+      <SettingsNavRow
+        href="/onboarding/welcome"
+        icon={Compass}
+        title={t("Getting started tour")}
+        subtitle={t("See what each feature is for and how to use it")}
+        iconClassName="bg-sky-500/10"
       />
     </div>
   );

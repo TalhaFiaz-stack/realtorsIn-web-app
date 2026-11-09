@@ -6,6 +6,7 @@ import { insertNewPostAtFeedTop } from "@/features/feed/lib/insert-new-post-into
 import { applyInfluencerPostCreateChallenge } from "@/features/influencer/lib/apply-post-create-challenge";
 import { mapInfluencerPostCreateChallenge } from "@/features/influencer/lib/map-influencer";
 import { createPostRequest } from "@/features/feed/services/posts.client";
+import { shareOffPlanProjectPostClient } from "@/features/off-plan/services/off-plan.client";
 import { showAppToast } from "@/lib/toast/app-toast";
 import {
   isPropertyDraftValid,
@@ -118,6 +119,15 @@ export type CreatePostMentionPayload = {
   }>;
 };
 
+/** Project picked in the composer's "Off Plan" tab. */
+export type OffPlanShareChoice = {
+  id: string;
+  label: string;
+  subtitle?: string;
+  imageUrl?: string;
+  developerName?: string;
+};
+
 export function useCreatePost(options?: {
   onSuccess?: (postId: number) => void;
 }) {
@@ -131,6 +141,8 @@ export function useCreatePost(options?: {
   const [scheduledAt, setScheduledAt] = useState("");
   const [inquiry, setInquiry] = useState<InquiryDraft>(EMPTY_INQUIRY);
   const [property, setProperty] = useState<PropertyDraft>(EMPTY_PROPERTY);
+  /** Selected project for an "Off Plan" share. */
+  const [offPlanProject, setOffPlanProject] = useState<OffPlanShareChoice | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const mentionPayloadRef = useRef<(() => CreatePostMentionPayload) | null>(
@@ -139,13 +151,13 @@ export function useCreatePost(options?: {
 
   const canSubmit = useMemo(() => {
     if (pending) return false;
-    if (attachType === "off_plan") return false;
+    if (attachType === "off_plan") return offPlanProject != null;
     if (attachType === "inquiry") return isInquiryValid(inquiry);
     if (attachType === "property") {
       return isPropertyDraftValid(property, files.length);
     }
     return description.trim().length > 0 || files.length > 0;
-  }, [attachType, description, files.length, inquiry, pending, property]);
+  }, [attachType, description, files.length, inquiry, pending, property, offPlanProject]);
 
   function reset() {
     setDescription("");
@@ -155,6 +167,7 @@ export function useCreatePost(options?: {
     setScheduledAt("");
     setInquiry(EMPTY_INQUIRY);
     setProperty(EMPTY_PROPERTY);
+    setOffPlanProject(null);
     setError(null);
     setPending(false);
   }
@@ -181,6 +194,7 @@ export function useCreatePost(options?: {
     }
     if (type !== "inquiry") setInquiry(EMPTY_INQUIRY);
     if (type !== "property") setProperty(EMPTY_PROPERTY);
+    if (type !== "off_plan") setOffPlanProject(null);
     setAttachType(type);
   }
 
@@ -255,6 +269,26 @@ export function useCreatePost(options?: {
           setPending(false);
           return;
         }
+      }
+
+      if (attachType === "off_plan" && offPlanProject) {
+        const mentionsForShare = mentionPayloadRef.current?.() ?? {
+          mentionedUserIds: [],
+          mentionedUsers: [],
+        };
+        const shared = await shareOffPlanProjectPostClient({
+          projectId: offPlanProject.id,
+          description: description.trim(),
+          visibility,
+          scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+          mentionedUserIds: mentionsForShare.mentionedUserIds,
+          mentionedUsers: mentionsForShare.mentionedUsers,
+        });
+        if (!scheduledAt) await insertNewPostAtFeedTop(queryClient, shared.id);
+        else showAppToast.success("Post scheduled", "Your project share will publish at the chosen time.");
+        options?.onSuccess?.(shared.id);
+        reset();
+        return;
       }
 
       const form = new FormData();
@@ -386,6 +420,8 @@ export function useCreatePost(options?: {
     pending,
     error,
     setError,
+    offPlanProject,
+    setOffPlanProject,
     canSubmit,
     submit,
     reset,

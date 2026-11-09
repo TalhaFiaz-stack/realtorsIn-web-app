@@ -82,7 +82,7 @@ export function mapSearchPage(
   }
 
   const posts = list
-    .map(mapFeedPost)
+    .map((raw) => mapFeedPost(raw))
     .filter((p): p is FeedPost => Boolean(p));
   return { kind: "posts", posts, ...pageMeta };
 }

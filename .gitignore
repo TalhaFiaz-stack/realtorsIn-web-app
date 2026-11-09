@@ -16,6 +16,10 @@
 # next.js
 /.next/
 /.next-build/
+/.next-verify/
+
+# local HTTPS dev certs (npm run dev:https)
+/certificates/
 /test-results/
 /playwright-report/
 /blob-report/

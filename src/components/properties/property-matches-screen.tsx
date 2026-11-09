@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { PropertyListingDetailView } from "@/components/properties/property-listing-detail-view";
+import { PropertyListingSummaryCard } from "@/components/properties/property-listing-detail-view";
 import { PropertyMatchCard } from "@/components/properties/property-match-card";
 import { ShellBackLink } from "@/components/navigation/shell-back-link";
 import { ShellBackRow } from "@/components/navigation/shell-back-row";
@@ -77,7 +77,7 @@ export function PropertyMatchesScreen({
           <h2 className="px-0.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
             Your listing
           </h2>
-          <PropertyListingDetailView listing={source} />
+          <PropertyListingSummaryCard listing={source} href={propertyListingHref(source.listingRowId, source)} />
         </section>
       ) : null}
 

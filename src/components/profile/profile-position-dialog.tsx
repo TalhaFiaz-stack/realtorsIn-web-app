@@ -1,17 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import { BriefcaseBusiness } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+  CharCount,
+  FormChoiceChips,
+  FormField,
+  FormGrid,
+  FormSection,
+  FormSelect,
+  FormToggleRow,
+  ProfileFormDialog,
+} from "@/components/profile/profile-form-dialog";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
   mutationErrorMessage,
@@ -88,167 +89,166 @@ export function ProfilePositionDialog({
     setError(null);
   }, [open, initial]);
 
+  const endBeforeStart =
+    !isCurrentlyWorking && Boolean(endDate) && Boolean(startDate) && endDate < startDate;
+  const canSave =
+    Boolean(title.trim()) && Boolean(company.trim()) && Boolean(startDate) && !endBeforeStart;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {initial ? "Edit experience" : "Add experience"}
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <Field label="Title *">
-            <Input value={title} onChange={(e) => setTitle(e.target.value)} />
-          </Field>
-          <Field label="Company *">
-            <Input
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-            />
-          </Field>
-          <Field label="Employment type">
-            <select
-              className="flex h-10 w-full rounded-lg border border-input bg-card px-3 text-sm"
+    <ProfileFormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={BriefcaseBusiness}
+      title={initial ? "Edit experience" : "Add experience"}
+      description="Share the roles that show your real estate track record."
+      error={error}
+      saving={mutation.isPending}
+      canSave={canSave}
+      footerStart={<><span className="text-destructive">*</span> Required</>}
+      onSave={() => {
+        setError(null);
+        mutation.mutate(
+          {
+            id: initial?.id ?? null,
+            title: title.trim(),
+            company: company.trim(),
+            employmentType,
+            jobType,
+            startDate,
+            endDate: isCurrentlyWorking ? null : endDate || null,
+            isCurrentlyWorking,
+            location: location.trim(),
+            description: description.trim(),
+            profileHeadline: profileHeadline.trim(),
+            skillIds,
+            newSkills,
+            imageFiles,
+          },
+          {
+            onSuccess: () => onOpenChange(false),
+            onError: (err) => setError(mutationErrorMessage(err)),
+          }
+        );
+      }}
+    >
+      <FormSection title="Role">
+        <FormField label="Title" required htmlFor="pos-title">
+          <Input
+            id="pos-title"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Senior Property Consultant"
+            autoFocus
+          />
+        </FormField>
+        <FormField label="Company" required htmlFor="pos-company">
+          <Input
+            id="pos-company"
+            value={company}
+            onChange={(e) => setCompany(e.target.value)}
+            placeholder="e.g. Emaar Properties"
+          />
+        </FormField>
+        <FormGrid>
+          <FormField label="Employment type" htmlFor="pos-employment">
+            <FormSelect
+              id="pos-employment"
               value={employmentType}
-              onChange={(e) =>
-                setEmploymentType(e.target.value as (typeof EMPLOYMENT)[number])
-              }
-            >
-              {EMPLOYMENT.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Job type">
-            <select
-              className="flex h-10 w-full rounded-lg border border-input bg-card px-3 text-sm"
-              value={jobType}
-              onChange={(e) =>
-                setJobType(e.target.value as (typeof JOB_TYPES)[number])
-              }
-            >
-              {JOB_TYPES.map((item) => (
-                <option key={item} value={item}>
-                  {item}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Start date *">
-            <Input
-              type="date"
-              value={startDate}
-              onChange={(e) => setStartDate(e.target.value)}
+              onChange={(v) => setEmploymentType(v as (typeof EMPLOYMENT)[number])}
+              options={EMPLOYMENT}
             />
-          </Field>
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={isCurrentlyWorking}
-              onCheckedChange={(v) => setIsCurrentlyWorking(v === true)}
-            />
-            I currently work here
-          </label>
-          {!isCurrentlyWorking ? (
-            <Field label="End date">
-              <Input
-                type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
-              />
-            </Field>
-          ) : null}
-          <Field label="Location">
+          </FormField>
+          <FormField label="Location" htmlFor="pos-location">
             <Input
+              id="pos-location"
               value={location}
               onChange={(e) => setLocation(e.target.value)}
+              placeholder="e.g. Dubai, UAE"
             />
-          </Field>
-          <Field label="Profile headline">
-            <Input
-              value={profileHeadline}
-              onChange={(e) => setProfileHeadline(e.target.value)}
-            />
-          </Field>
-          <Field label="Description">
-            <Textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </Field>
-          <ProfileSectionSkillsField
-            skills={skills}
-            selectedSkillIds={skillIds}
-            onSelectedSkillIdsChange={setSkillIds}
-            newSkillNames={newSkills}
-            onNewSkillNamesChange={setNewSkills}
+          </FormField>
+        </FormGrid>
+        <FormField label="Work setup">
+          <FormChoiceChips
+            value={jobType}
+            onChange={setJobType}
+            options={JOB_TYPES}
+            ariaLabel="Work setup"
           />
-          <ProfileSectionImagesField
-            existingUrls={initial?.imageUrls ?? []}
-            files={imageFiles}
-            onFilesChange={setImageFiles}
-          />
-        </div>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            disabled={
-              mutation.isPending || !title.trim() || !company.trim() || !startDate
-            }
-            onClick={() => {
-              setError(null);
-              mutation.mutate(
-                {
-                  id: initial?.id ?? null,
-                  title: title.trim(),
-                  company: company.trim(),
-                  employmentType,
-                  jobType,
-                  startDate,
-                  endDate: endDate || null,
-                  isCurrentlyWorking,
-                  location: location.trim(),
-                  description: description.trim(),
-                  profileHeadline: profileHeadline.trim(),
-                  skillIds,
-                  newSkills,
-                  imageFiles,
-                },
-                {
-                  onSuccess: () => onOpenChange(false),
-                  onError: (err) => setError(mutationErrorMessage(err)),
-                }
-              );
-            }}
-          >
-            {mutation.isPending ? "Saving…" : "Save"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-}
+        </FormField>
+      </FormSection>
 
-function Field({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {children}
-    </div>
+      <FormSection title="Dates">
+        <FormToggleRow
+          checked={isCurrentlyWorking}
+          onChange={setIsCurrentlyWorking}
+          label="I currently work in this role"
+        />
+        <FormGrid>
+          <FormField label="Start date" required htmlFor="pos-start">
+            <Input
+              id="pos-start"
+              type="date"
+              value={startDate}
+              max={today()}
+              onChange={(e) => setStartDate(e.target.value)}
+            />
+          </FormField>
+          {!isCurrentlyWorking ? (
+            <FormField
+              label="End date"
+              htmlFor="pos-end"
+              hint={endBeforeStart ? <span className="text-destructive">End date must be after the start date.</span> : undefined}
+            >
+              <Input
+                id="pos-end"
+                type="date"
+                value={endDate}
+                min={startDate || undefined}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
+            </FormField>
+          ) : null}
+        </FormGrid>
+      </FormSection>
+
+      <FormSection title="Details">
+        <FormField label="Profile headline" htmlFor="pos-headline" hint="Shown under your name while this is your current role.">
+          <Input
+            id="pos-headline"
+            value={profileHeadline}
+            onChange={(e) => setProfileHeadline(e.target.value)}
+            placeholder="e.g. Helping families find homes in Dubai Marina"
+          />
+        </FormField>
+        <FormField
+          label="Description"
+          htmlFor="pos-description"
+          hint={<CharCount value={description} max={2000} />}
+        >
+          <Textarea
+            id="pos-description"
+            value={description}
+            maxLength={2000}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Key responsibilities, deals closed, achievements…"
+            className="min-h-24"
+          />
+        </FormField>
+        <ProfileSectionSkillsField
+          skills={skills}
+          selectedSkillIds={skillIds}
+          onSelectedSkillIdsChange={setSkillIds}
+          newSkillNames={newSkills}
+          onNewSkillNamesChange={setNewSkills}
+        />
+        <ProfileSectionImagesField
+          label="Media"
+          existingUrls={initial?.imageUrls ?? []}
+          files={imageFiles}
+          onFilesChange={setImageFiles}
+          hint="Add photos of projects, awards or your team."
+        />
+      </FormSection>
+    </ProfileFormDialog>
   );
 }

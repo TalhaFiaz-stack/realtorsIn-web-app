@@ -22,8 +22,8 @@ export function MessagesWorkspace({
           className="mb-2 shrink-0 rounded-md border border-amber-200/80 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100"
           role="status"
         >
-          {realtime.error} Live updates need SocialProfileREM chat running at{" "}
-          <code className="text-[11px]">SOCIAL_API_URL</code>.
+          Reconnecting to chat… New messages will appear as soon as the
+          connection is back.
         </p>
       ) : null}
       <div className="flex min-h-0 flex-1 gap-4 overflow-hidden">

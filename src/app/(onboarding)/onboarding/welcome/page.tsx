@@ -1,11 +1,8 @@
 import { redirect } from "next/navigation";
-import { AuthBrandHeader } from "@/components/auth/auth-brand-header";
-import { AuthOutlineButton } from "@/components/auth/auth-outline-button";
-import { AuthPrimaryLink } from "@/components/auth/auth-primary-link";
-import { AuthSecurityNote } from "@/components/auth/auth-security-note";
+import { GettingStartedTour } from "@/components/onboarding/getting-started-tour";
 import { requireMember } from "@/lib/auth/require-member";
 
-export const metadata = { title: "Welcome aboard" };
+export const metadata = { title: "Getting started" };
 
 export default async function OnboardingWelcomePage() {
   const member = await requireMember({
@@ -17,26 +14,8 @@ export default async function OnboardingWelcomePage() {
     redirect("/onboarding/profile");
   }
 
-  const displayName =
-    member.fullName || member.name || member.userName || "there";
+  const firstName =
+    (member.fullName || member.name || member.userName || "there").trim().split(/\s+/)[0] ?? "there";
 
-  return (
-    <div className="space-y-6">
-      <AuthBrandHeader
-        title="Welcome aboard"
-        description={
-          <>
-            Marhaba,{" "}
-            <span className="font-medium text-foreground">{displayName}</span>.
-            Your profile is ready.
-          </>
-        }
-      />
-      <div className="flex flex-col gap-3">
-        <AuthPrimaryLink href="/feed">Explore the network</AuthPrimaryLink>
-        <AuthOutlineButton href="/connections">Find connections</AuthOutlineButton>
-      </div>
-      <AuthSecurityNote />
-    </div>
-  );
+  return <GettingStartedTour firstName={firstName} />;
 }

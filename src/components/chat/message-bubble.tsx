@@ -10,6 +10,11 @@ import {
   SharedProfileCard,
   SharedStoryCard,
 } from "@/components/chat/chat-share-cards";
+import {
+  MessageActionsMenu,
+  MessageReactions,
+  type ChatMessageActions,
+} from "@/components/chat/message-actions";
 import type { ChatMessage } from "@/features/chat/types/chat.types";
 import { cn } from "@/lib/utils";
 
@@ -143,6 +148,70 @@ function ShareBubble({
 }
 
 export function MessageBubble({
+  message,
+  onOpenSharedPost,
+  actions,
+}: {
+  message: ChatMessage;
+  onOpenSharedPost?: (postId: number) => void;
+  /** Edit / react / delete (mobile parity). Omit for read-only bubbles. */
+  actions?: ChatMessageActions;
+}) {
+  const own = message.isOwn;
+
+  if (message.isDeleted) {
+    return (
+      <div
+        className={cn(
+          "flex w-full max-w-full",
+          own ? "justify-end" : "justify-start"
+        )}
+      >
+        <span className="rounded-[1.15rem] border border-dashed border-border px-3.5 py-2 text-sm italic text-muted-foreground">
+          This message was deleted
+        </span>
+      </div>
+    );
+  }
+
+  const bubble = <MessageBubbleContent message={message} onOpenSharedPost={onOpenSharedPost} />;
+  const canAct = actions != null && !isOptimisticMessageId(message.id);
+  if (!canAct && message.reactions.length === 0 && !message.isEdited) {
+    return bubble;
+  }
+
+  return (
+    <div className="group relative flex w-full max-w-full flex-col">
+      <div
+        className={cn(
+          "flex w-full items-center gap-1",
+          own ? "flex-row-reverse" : "flex-row"
+        )}
+      >
+        <div className="min-w-0 flex-1">{bubble}</div>
+        {canAct ? <MessageActionsMenu message={message} actions={actions} /> : null}
+      </div>
+      {message.isEdited ? (
+        <span
+          className={cn(
+            "mt-0.5 text-[10px] text-muted-foreground",
+            own ? "text-end" : "text-start"
+          )}
+        >
+          Edited
+        </span>
+      ) : null}
+      <MessageReactions
+        message={message}
+        onToggle={
+          actions ? (emoji) => void actions.onReact(message, emoji) : undefined
+        }
+      />
+    </div>
+  );
+}
+
+function MessageBubbleContent({
   message,
   onOpenSharedPost,
 }: {

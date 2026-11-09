@@ -95,7 +95,7 @@ export function mapSavedPostsPage(payload: unknown): FeedPage {
   const data = asRecord(root?.data);
   const list = Array.isArray(data?.posts) ? data.posts : [];
   const posts = list
-    .map(mapFeedPost)
+    .map((raw) => mapFeedPost(raw))
     .filter((p): p is NonNullable<ReturnType<typeof mapFeedPost>> => Boolean(p))
     .map((post) => ({ ...post, isSaved: true }));
   const pagination = asRecord(data?.pagination) ?? {};

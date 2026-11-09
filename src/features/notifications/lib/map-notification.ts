@@ -63,7 +63,30 @@ export function mapNotification(raw: unknown): AppNotification | null {
     connectionId: asNumber(row.connection_id),
     canAcceptConnection: asBool(row.can_accept_connection),
     conversationId,
+    routing: buildRouting(row, metadata),
   };
+}
+
+function buildRouting(
+  row: Record<string, unknown>,
+  metadata: Record<string, unknown> | null
+): Record<string, string | number | boolean | null> {
+  const out: Record<string, string | number | boolean | null> = {};
+  const take = (source: Record<string, unknown> | null) => {
+    if (!source) return;
+    for (const [key, value] of Object.entries(source)) {
+      if (value === null || ["string", "number", "boolean"].includes(typeof value)) {
+        out[key] = value as string | number | boolean | null;
+      }
+    }
+  };
+  // Metadata first, row last so top-level `type` / ids win.
+  take(metadata);
+  take(row);
+  // Drop bulky display fields.
+  delete out.profile_image;
+  delete out.action_text;
+  return out;
 }
 
 export function mapNotificationsPage(payload: unknown): NotificationsPage {

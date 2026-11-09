@@ -44,6 +44,19 @@ export type OffPlanProjectBuilding = {
   totalProperties: number | null;
 };
 
+export type OffPlanResaleUnit = {
+  id: number;
+  title: string;
+  bedrooms: string | null;
+  baths: string | null;
+  areaStart: number | null;
+  areaEnd: number | null;
+  priceStart: number | null;
+  priceEnd: number | null;
+  currency: string | null;
+  paymentPlan: string | null;
+};
+
 export type OffPlanProjectDetail = OffPlanProjectSummary & {
   description: string | null;
   propertyTypes: string | null;
@@ -76,6 +89,8 @@ export type OffPlanProjectDetail = OffPlanProjectSummary & {
   salesExecutives: OffPlanSalesExecutive[];
   salesAgencies: OffPlanSalesAgency[];
   resaleUnitsCount: number;
+  /** Mobile `ReSellUnitModal` rows — each opens the public listing (type `sell`). */
+  resaleUnits: OffPlanResaleUnit[];
   hasPaymentPlans: boolean;
   hasParking: boolean;
   hasBrokerInfo: boolean;
@@ -229,8 +244,20 @@ export type PublishedListingSummary = {
   baths: string | null;
   area: string | null;
   image: string | null;
+  /** Social listings have no verified flag (status 5 is just "Active"). */
   verified: boolean;
   remPropertyId: number | null;
+  priceStart?: number | null;
+  priceEnd?: number | null;
+  areaStart?: number | null;
+  areaEnd?: number | null;
+  category?: string | null;
+  propertyType?: string | null;
+  availability?: "ready" | "offplan" | null;
+  refNo?: string | null;
+  listedAgo?: string | null;
+  agentName?: string | null;
+  agentImageUrl?: string | null;
 };
 
 export type PublishedListingsPage = {

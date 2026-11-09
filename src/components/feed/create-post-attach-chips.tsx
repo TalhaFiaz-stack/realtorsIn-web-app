@@ -19,7 +19,6 @@ const CHIPS: {
     label: "Off Plan",
     color: "#1190A8",
     icon: Landmark,
-    comingSoon: true,
   },
   {
     type: "inquiry",

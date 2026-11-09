@@ -1,5 +1,6 @@
 "use client";
 
+import { CreatePostOffPlanPicker } from "@/components/feed/create-post-off-plan-picker";
 import { useEffect, useRef, useState } from "react";
 import {
   ChevronDown,
@@ -119,7 +120,6 @@ export function CreatePostDialog({
     }
   }
 
-  const comingSoonAttach = form.attachType === "off_plan";
   const scheduleActive = Boolean(form.scheduledAt);
 
   return (
@@ -343,11 +343,12 @@ export function CreatePostDialog({
             />
           ) : null}
 
-          {comingSoonAttach ? (
-            <div className="rounded-xl border border-dashed border-border bg-muted/30 px-4 py-6 text-center text-sm text-muted-foreground">
-              Off Plan sharing is available in the mobile app. Photo, video,
-              inquiry, and property listing posts work here now.
-            </div>
+          {form.attachType === "off_plan" ? (
+            <CreatePostOffPlanPicker
+              value={form.offPlanProject}
+              onChange={form.setOffPlanProject}
+              disabled={form.pending}
+            />
           ) : null}
 
           {(form.attachType === "photo" || form.attachType === "video") && (

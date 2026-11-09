@@ -27,6 +27,9 @@ export function createOptimisticChatMessage(input: {
     sharedEvent: null,
     sharedProfile: null,
     sharedStory: null,
+    isEdited: false,
+    isDeleted: false,
+    reactions: [],
   };
 }
 

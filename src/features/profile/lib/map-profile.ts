@@ -177,9 +177,16 @@ function mapCertificate(raw: unknown): ProfileCertificate | null {
     id,
     name,
     authority: asString(row.authority) ?? asString(row.issuing_organization),
-    issueDate: asString(row.issue_date) ?? asString(row.start_date),
-    expiryDate: asString(row.expiry_date) ?? asString(row.end_date),
+    issueDate:
+      asString(row.issued_date) ??
+      asString(row.issue_date) ??
+      asString(row.start_date),
+    expiryDate:
+      asString(row.expiration_date) ??
+      asString(row.expiry_date) ??
+      asString(row.end_date),
     certificateNumber: asString(row.certificate_number),
+    description: asString(row.description),
     skillIds: mapIdList(row.skills_ids ?? row.skills),
     imageUrl,
   };

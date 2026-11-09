@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { OffPlanResaleUnitsDialog } from "@/components/listings/off-plan-detail/off-plan-resale-units-dialog";
 import { OffPlanDetailImageLightbox } from "@/components/listings/off-plan-detail/off-plan-detail-image-lightbox";
 import { trackOffPlanActivity } from "@/features/off-plan/services/off-plan-track.client";
 import { buildOffPlanDeveloperHref } from "@/features/off-plan/lib/off-plan-developer-url";
@@ -25,6 +26,7 @@ export function OffPlanDetailHero({
         : [];
   const [index, setIndex] = useState(0);
   const [galleryOpen, setGalleryOpen] = useState(false);
+  const [resaleOpen, setResaleOpen] = useState(false);
   const slide = slides[index] ?? null;
 
   const prev = () =>
@@ -217,13 +219,25 @@ export function OffPlanDetailHero({
               </Button>
             ) : null}
             {project.resaleUnitsCount > 0 ? (
-              <Button size="sm" variant="outline" disabled title="Coming soon on web">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setResaleOpen(true)}
+              >
                 Re-sell units ({project.resaleUnitsCount})
               </Button>
             ) : null}
           </div>
         </div>
       </div>
+
+      <OffPlanResaleUnitsDialog
+        open={resaleOpen}
+        onOpenChange={setResaleOpen}
+        projectTitle={project.title}
+        units={project.resaleUnits}
+        fallbackCurrency={project.currency}
+      />
 
       {galleryOpen && slides.length > 0 ? (
         <OffPlanDetailImageLightbox

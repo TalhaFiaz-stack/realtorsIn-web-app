@@ -2,24 +2,33 @@
 
 import { OFF_PLAN_MAP_LEGEND } from "@/features/off-plan/lib/off-plan-map-status-colors";
 
+/** Compact status key — one pill row instead of a large card over the map. */
 export function OffPlanMapLegend() {
   return (
-    <div className="pointer-events-none absolute start-3 top-3 z-[1000] max-w-[11rem] rounded-2xl border border-border/50 bg-background/90 p-3.5 text-xs shadow-lg backdrop-blur-md">
-      <p className="mb-2.5 text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground">
-        Development status
-      </p>
-      <ul className="space-y-1.5">
-        {OFF_PLAN_MAP_LEGEND.map((item) => (
-          <li key={item.label} className="flex items-center gap-2">
-            <span
-              className="h-3 w-3 shrink-0 rounded-full border border-border/50"
-              style={{ backgroundColor: item.color }}
-              aria-hidden
-            />
-            <span>{item.label}</span>
-          </li>
-        ))}
-      </ul>
+    <ul
+      className="pointer-events-none flex min-h-9 max-w-full flex-wrap items-center gap-x-3 gap-y-1 whitespace-nowrap rounded-2xl border border-border/60 bg-background/95 px-3 py-1.5 text-[11px] font-medium text-foreground/80 shadow-md backdrop-blur-md"
+      aria-label="Development status"
+    >
+      {OFF_PLAN_MAP_LEGEND.map((item) => (
+        <li key={item.label} className="flex items-center gap-1.5">
+          <span
+            className="h-2.5 w-2.5 shrink-0 rounded-full ring-1 ring-black/10"
+            style={{ backgroundColor: item.color }}
+            aria-hidden
+          />
+          {item.label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Top-left overlay row: optional leading control (e.g. "Projects") + legend. */
+export function OffPlanMapTopStart({ leading }: { leading?: React.ReactNode }) {
+  return (
+    <div className="pointer-events-none absolute start-3 top-3 z-[1002] flex max-w-[calc(100%-4.5rem)] flex-wrap items-center gap-2">
+      {leading}
+      <OffPlanMapLegend />
     </div>
   );
 }

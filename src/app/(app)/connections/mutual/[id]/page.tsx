@@ -13,9 +13,11 @@ export default async function MutualConnectionsPage({
 }: Props) {
   const { id } = await params;
   const { name } = await searchParams;
-  const remUserId = Number(id);
+  // Links (suggestion cards, rail) pass the member's social profile id —
+  // the same `userId` used everywhere else in the web app.
+  const socialProfileId = Number(id);
 
-  if (!Number.isFinite(remUserId) || remUserId <= 0) {
+  if (!Number.isFinite(socialProfileId) || socialProfileId <= 0) {
     return (
       <p className="text-sm text-destructive">Invalid member id for mutual list.</p>
     );
@@ -23,7 +25,7 @@ export default async function MutualConnectionsPage({
 
   return (
     <MutualConnectionsScreen
-      remUserId={remUserId}
+      socialProfileId={socialProfileId}
       subjectName={name}
     />
   );

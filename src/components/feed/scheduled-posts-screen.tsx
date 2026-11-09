@@ -1,5 +1,7 @@
 "use client";
 
+import { useCreatePostComposer } from "@/components/feed/create-post-provider";
+
 import { useMemo, useState } from "react";
 import { CalendarClock } from "lucide-react";
 import { ScheduledPostsListSkeleton } from "@/components/feed/scheduled-posts-list-skeleton";
@@ -167,6 +169,7 @@ function ScheduledPostRow({ post }: { post: ScheduledPost }) {
 }
 
 export function ScheduledPostsScreen() {
+  const { openComposer } = useCreatePostComposer();
   const query = useScheduledPostsList();
   const posts = useMemo(
     () => query.data?.pages.flatMap((p) => p.posts) ?? [],
@@ -196,9 +199,7 @@ export function ScheduledPostsScreen() {
         title="No scheduled posts"
         description="When you schedule a post from Create, it will appear here until it publishes."
         actionLabel="Create post"
-        onAction={() => {
-          window.location.href = "/create";
-        }}
+        onAction={() => openComposer()}
       />
     );
   }

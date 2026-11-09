@@ -36,6 +36,11 @@ export type PropertyListing = {
   buildingId: number | null;
   neighbourhoodId: number | null;
   publicNotes: string | null;
+  /** Relative "listed" time from the API (mobile `format_created_at`). */
+  formatCreatedAt?: string | null;
+  /** Listing agent (first of `agents`, else the owner profile). */
+  agentName?: string | null;
+  agentImageUrl?: string | null;
 };
 
 export type PropertyMatchResult = {

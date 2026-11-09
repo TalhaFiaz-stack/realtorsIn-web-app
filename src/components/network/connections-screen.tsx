@@ -10,7 +10,8 @@ import {
   connectionTabPath,
   type ConnectionTabKey,
 } from "@/features/network/constants/connection-routes";
-import { Search } from "lucide-react";
+import { Search, UserPlus, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ConnectedTab } from "@/components/network/connected-tab";
 import { NetworkRowActions } from "@/components/network/network-row-actions";
 import { PersonRow } from "@/components/network/person-row";
@@ -22,6 +23,8 @@ import { InlineLoader } from "@/components/states/inline-loader";
 import { NetworkPeopleSkeleton } from "@/components/states/list-row-skeleton";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { HubControlCard, HubControlCardBody } from "@/components/hub/hub-control-card";
+import { HubModuleHeader } from "@/components/hub/hub-module-header";
 import {
   connectSuggestionWithDismiss,
   networkErrorMessage,
@@ -113,24 +116,6 @@ export function ConnectionsScreen() {
 
   return (
     <div className="w-full max-w-2xl space-y-3 px-4 md:px-0">
-      <header>
-        <h1 className="text-xl font-semibold tracking-tight">Network</h1>
-        <p className="mt-0.5 text-sm text-muted-foreground">
-          Filter your lists below, or use header{" "}
-          <Link
-            href="/search?tab=account"
-            className="font-medium text-primary hover:underline"
-          >
-            Search people
-          </Link>{" "}
-          to find someone new, or browse{" "}
-          <Link href="/brokers" className="font-medium text-primary hover:underline">
-            verified brokers
-          </Link>
-          .
-        </p>
-      </header>
-
       <Tabs
         value={tab}
         onValueChange={(value) => {
@@ -140,51 +125,71 @@ export function ConnectionsScreen() {
           router.replace(connectionTabPath(next));
         }}
       >
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="all">
-            Connected
-            {listQuery.data?.totalConnections != null && tab === "all" ? (
-              <span className="ms-1 tabular-nums text-muted-foreground">
-                ({listQuery.data.totalConnections})
-              </span>
-            ) : null}
-          </TabsTrigger>
-          <TabsTrigger value="pending-received">
-            Incoming
-            {(listQuery.data?.pendingReceived ?? 0) > 0 ? (
-              <span className="ms-1 tabular-nums text-primary">
-                ({listQuery.data?.pendingReceived})
-              </span>
-            ) : null}
-          </TabsTrigger>
-          <TabsTrigger value="pending-sent">
-            Sent
-            {(listQuery.data?.pendingSent ?? 0) > 0 ? (
-              <span className="ms-1 tabular-nums text-muted-foreground">
-                ({listQuery.data?.pendingSent})
-              </span>
-            ) : null}
-          </TabsTrigger>
-          <TabsTrigger value="suggestions">Discover</TabsTrigger>
-        </TabsList>
-
-        <div className="relative mt-3">
-          <Search
-            className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-            aria-hidden
-          />
-          <Input
-            value={listFilter}
-            onChange={(event) => setListFilter(event.target.value)}
-            className="h-9 ps-9"
-            placeholder={
-              tab === "suggestions"
-                ? "Filter suggestions by name"
-                : "Filter this list by name or username"
-            }
-            aria-label="Filter network list"
-          />
-        </div>
+        <HubControlCard>
+          <HubControlCardBody>
+            <HubModuleHeader
+              title="My network"
+              subtitle="Manage connections, requests and people you may know"
+              icon={Users}
+              action={
+                <Button asChild size="sm" variant="outline" className="h-9 rounded-full">
+                  <Link href="/search?tab=account">
+                    <UserPlus className="h-4 w-4" aria-hidden />
+                    <span className="hidden sm:inline">Find people</span>
+                  </Link>
+                </Button>
+              }
+            />
+            <TabsList className="-my-1 flex h-auto w-full justify-start gap-2 overflow-x-auto bg-transparent p-0 py-1 [scrollbar-width:none]">
+              <TabsTrigger value="all" className="h-8 shrink-0 rounded-full border border-border bg-background px-4 text-sm font-medium text-foreground/80 shadow-none transition-colors hover:bg-muted/60 data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">
+                Connected
+                {listQuery.data?.totalConnections != null && tab === "all" ? (
+                  <span className="ms-1.5 tabular-nums opacity-80">{listQuery.data.totalConnections}</span>
+                ) : null}
+              </TabsTrigger>
+              <TabsTrigger value="pending-received" className="h-8 shrink-0 rounded-full border border-border bg-background px-4 text-sm font-medium text-foreground/80 shadow-none transition-colors hover:bg-muted/60 data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">
+                Requests
+                {(listQuery.data?.pendingReceived ?? 0) > 0 ? (
+                  <span className="ms-1.5 rounded-full bg-destructive px-1.5 text-[11px] font-semibold tabular-nums text-destructive-foreground">
+                    {listQuery.data?.pendingReceived}
+                  </span>
+                ) : null}
+              </TabsTrigger>
+              <TabsTrigger value="pending-sent" className="h-8 shrink-0 rounded-full border border-border bg-background px-4 text-sm font-medium text-foreground/80 shadow-none transition-colors hover:bg-muted/60 data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">
+                Sent
+                {(listQuery.data?.pendingSent ?? 0) > 0 ? (
+                  <span className="ms-1.5 tabular-nums opacity-80">{listQuery.data?.pendingSent}</span>
+                ) : null}
+              </TabsTrigger>
+              <TabsTrigger value="suggestions" className="h-8 shrink-0 rounded-full border border-border bg-background px-4 text-sm font-medium text-foreground/80 shadow-none transition-colors hover:bg-muted/60 data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">
+                Discover
+              </TabsTrigger>
+            </TabsList>
+            <div className="relative">
+              <Search
+                className="pointer-events-none absolute start-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                aria-hidden
+              />
+              <Input
+                value={listFilter}
+                onChange={(event) => setListFilter(event.target.value)}
+                className="h-10 rounded-full bg-muted/50 ps-10"
+                placeholder={
+                  tab === "suggestions"
+                    ? "Filter suggestions by name"
+                    : "Filter this list by name or username"
+                }
+                aria-label="Filter network list"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Looking for verified agents?{" "}
+              <Link href="/brokers" className="font-medium text-primary hover:underline">
+                Browse verified brokers
+              </Link>
+            </p>
+          </HubControlCardBody>
+        </HubControlCard>
 
         <TabsContent value="all" className="mt-3">
           {listFilterActive && people.length > 0 && filteredPeople.length === 0 ? (
@@ -301,11 +306,6 @@ export function ConnectionsScreen() {
           <InlineLoader className="text-primary" />
         </div>
       ) : null}
-      <p className="pb-2 text-center text-sm text-muted-foreground">
-        <Link href="/messages" className="text-primary hover:underline">
-          Open messages
-        </Link>
-      </p>
     </div>
   );
 }

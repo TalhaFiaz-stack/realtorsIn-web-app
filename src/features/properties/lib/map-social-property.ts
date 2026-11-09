@@ -43,6 +43,13 @@ export function mapPropertyListing(raw: unknown): PropertyListing | null {
     : share?.imageUrls ?? [];
 
   const statusId = asNumber(row.property_status_id);
+  const agentRow = Array.isArray(row.agents) ? asRecord(row.agents[0]) : null;
+  const ownerRow = asRecord(row.socialProfile) ?? asRecord(row.social_profile);
+  const ownerName = ownerRow
+    ? `${typeof ownerRow.name === "string" ? ownerRow.name : ""} ${
+        typeof ownerRow.last_name === "string" ? ownerRow.last_name : ""
+      }`.trim()
+    : "";
 
   return {
     listingRowId,
@@ -103,6 +110,16 @@ export function mapPropertyListing(raw: unknown): PropertyListing | null {
       typeof row.sub_community === "string" ? row.sub_community.trim() : null,
     buildingId: asNumber(row.building_id),
     neighbourhoodId: asNumber(row.neighbourhood_id),
+    formatCreatedAt:
+      typeof row.format_created_at === "string" ? row.format_created_at : null,
+    agentName:
+      (agentRow && typeof agentRow.name === "string" && agentRow.name.trim()) ||
+      ownerName ||
+      null,
+    agentImageUrl:
+      (agentRow && typeof agentRow.image === "string" && agentRow.image) ||
+      (ownerRow && typeof ownerRow.profile_image === "string" && ownerRow.profile_image) ||
+      null,
     publicNotes:
       typeof row.public_notes === "string" ? row.public_notes.trim() : null,
   };

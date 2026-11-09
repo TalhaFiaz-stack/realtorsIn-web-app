@@ -99,3 +99,19 @@ describe("isBackendSuccess", () => {
     expect(isBackendSuccess({ status: false })).toBe(false);
   });
 });
+
+describe("mapFeedPage page size", () => {
+  it("keeps every post on the page (regression: only 3 of 20 survived)", () => {
+    const rows = Array.from({ length: 20 }, (_, i) => ({
+      id: 1000 + i,
+      user_id: 1,
+      description: `post ${i}`,
+    }));
+    const page = mapFeedPage({
+      status: true,
+      data: { data: rows, current_page: 1, last_page: 5, per_page: 20, total: 100 },
+    });
+    expect(page.posts).toHaveLength(20);
+    expect(page.posts.map((p) => p.id)).toEqual(rows.map((r) => r.id));
+  });
+});

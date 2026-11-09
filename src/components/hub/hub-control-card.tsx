@@ -10,7 +10,7 @@ export function HubControlCard({
   return (
     <section
       className={cn(
-        "overflow-hidden rounded-xl border border-border/80 bg-card shadow-sm",
+        "overflow-hidden rounded-xl border border-border/70 bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]",
         className
       )}
     >
@@ -25,7 +25,7 @@ export function HubControlCardHeader({
   children: React.ReactNode;
 }) {
   return (
-    <div className="border-b border-border/60 px-4 py-3">{children}</div>
+    <div className="px-4 pb-1 pt-4">{children}</div>
   );
 }
 

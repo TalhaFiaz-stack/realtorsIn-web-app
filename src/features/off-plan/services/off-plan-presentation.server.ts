@@ -81,3 +81,38 @@ export async function requestOffPlanProjectPdfUrl(
   }
   return payload.url;
 }
+
+/** Unit presentation / quotation PDF → generated file URL (mobile `getPresentationUrl`). */
+export async function requestOffPlanUnitPdfUrl(path: string): Promise<string> {
+  const nodeToken = await getRemCatalogBearerToken();
+  if (!nodeToken) {
+    throw new ApiError("UNAUTHORIZED", "Sign in with a REM account to download PDFs", 401);
+  }
+  let payload: { status?: boolean | string; message?: string; url?: string };
+  try {
+    payload = await remCrmRequest<{
+      status?: boolean | string;
+      message?: string;
+      url?: string;
+    }>({ path, accessToken: nodeToken });
+  } catch (error) {
+    // REM's unit PDF endpoints only accept the REM-app access token (mobile
+    // `user.access_token`); web sessions carry the off-plan node token.
+    if (error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+      throw new ApiError(
+        "FORBIDDEN",
+        "Unit PDFs can’t be generated from the web app yet. Please create this PDF from the RealtorsIn mobile app for now.",
+        403
+      );
+    }
+    throw error;
+  }
+  if (!isRemCrmSuccess(payload) || typeof payload.url !== "string") {
+    const message =
+      typeof payload.message === "string" && payload.message.trim()
+        ? payload.message
+        : "Unable to generate PDF";
+    throw new ApiError("SERVER", message, 502);
+  }
+  return payload.url;
+}

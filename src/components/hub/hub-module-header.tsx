@@ -1,26 +1,39 @@
-import { RealtorsInAppIcon } from "@/components/brand/realtorsin-app-icon";
+import type { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
+/**
+ * Page header for hub screens (Listings, Property Hub, Events, Jobs):
+ * tinted page icon, title + one-line description, primary action on the right.
+ */
 export function HubModuleHeader({
   title,
+  subtitle,
+  icon: Icon,
   action,
+  className,
 }: {
   title: string;
+  subtitle?: string;
+  icon?: LucideIcon;
   action?: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="flex items-center gap-3">
-      <RealtorsInAppIcon size={36} className="shrink-0 shadow-sm" />
-      <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
-        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0">
-          <h1 className="text-lg font-semibold leading-none tracking-tight text-foreground">
-            {title}
-          </h1>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
-            RealtorsIn
-          </span>
-        </div>
-        {action ? <div className="shrink-0">{action}</div> : null}
+    <div className={cn("flex items-center gap-3", className)}>
+      {Icon ? (
+        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Icon className="h-5 w-5" aria-hidden />
+        </span>
+      ) : null}
+      <div className="min-w-0 flex-1">
+        <h1 className="truncate text-lg font-semibold leading-tight tracking-tight text-foreground sm:text-xl">
+          {title}
+        </h1>
+        {subtitle ? (
+          <p className="truncate text-xs text-muted-foreground sm:text-sm">{subtitle}</p>
+        ) : null}
       </div>
+      {action ? <div className="flex shrink-0 items-center gap-2">{action}</div> : null}
     </div>
   );
 }

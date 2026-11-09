@@ -1,3 +1,4 @@
+import { listingAvailability } from "@/features/off-plan/lib/listing-type";
 import type { PropertyListing } from "@/features/properties/types/property-hub.types";
 import type {
   PublishedListingSummary,
@@ -26,8 +27,20 @@ export function mapSocialListingToPublishedSummary(
         ? String(listing.areaStart)
         : listing.areaLabel,
     image: listing.imageUrl,
-    verified: listing.propertyStatusId === 5,
+    // Status 5 is "Active" (every browse listing) — not verification.
+    verified: false,
     remPropertyId: listing.remPropertyId,
+    priceStart: listing.priceStart,
+    priceEnd: listing.priceEnd,
+    areaStart: listing.areaStart,
+    areaEnd: listing.areaEnd,
+    category: listing.category,
+    propertyType: listing.propertyType,
+    availability: listingAvailability(listing.availability),
+    refNo: listing.refNo,
+    listedAgo: listing.formatCreatedAt ?? null,
+    agentName: listing.agentName ?? null,
+    agentImageUrl: listing.agentImageUrl ?? null,
   };
 }
 

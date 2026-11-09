@@ -56,3 +56,27 @@ export async function unfollowHashtag(input: {
   }
   return hashtagMessage(payload, "Unfollowed");
 }
+
+export async function followHashtag(input: {
+  hashtagId?: number;
+  hashtag?: string;
+}) {
+  const payload = await socialApiRequest<unknown>({
+    path: "/api/posts/hashtag/follow/store",
+    method: "POST",
+    auth: true,
+    data: {
+      ...(input.hashtagId ? { hashtag_id: input.hashtagId } : {}),
+      ...(input.hashtag ? { hashtag: input.hashtag.replace(/^#/, "") } : {}),
+    },
+  });
+
+  if (!isHashtagSuccess(payload)) {
+    throw new ApiError(
+      "SERVER",
+      hashtagMessage(payload, "Unable to follow tag"),
+      502
+    );
+  }
+  return hashtagMessage(payload, "Following");
+}

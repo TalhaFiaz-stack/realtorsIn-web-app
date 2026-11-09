@@ -12,6 +12,11 @@ export type AppNotification = {
   connectionId: number | null;
   canAcceptConnection: boolean;
   conversationId: number | null;
+  /**
+   * Scalar row fields + metadata (type, *_id, screen, deep_link…) used to
+   * resolve where a tap should go — same rules as push-notification clicks.
+   */
+  routing: Record<string, string | number | boolean | null>;
 };
 
 export type NotificationsPage = {

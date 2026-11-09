@@ -11,8 +11,9 @@ import {
 } from "@/components/feed/feed-filter-dialog";
 import { ShellMeMenu } from "@/components/layout/shell-me-menu";
 import { ShellNavLink } from "@/components/layout/shell-nav-link";
+import { NotificationsPopover } from "@/components/notifications/notifications-popover";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
-import { Input } from "@/components/ui/input";
+import { ShellGlobalSearch } from "@/components/layout/shell-global-search";
 import { usePrimaryNav } from "@/features/localization/hooks/use-translated-nav";
 import type { PublicMember } from "@/features/auth/types/auth.types";
 import { useShellNavBadges } from "@/hooks/use-shell-nav-badges";
@@ -78,7 +79,7 @@ export function ShellTopNav({ member }: { member: PublicMember }) {
   }, [onFeed, searchParams]);
 
   return (
-    <header className="sticky top-0 z-50 border-b border-border bg-card">
+    <header className="sticky top-0 z-50 border-b border-border/70 bg-card/90 shadow-[0_1px_2px_rgba(0,0,0,0.03)] backdrop-blur-xl supports-[backdrop-filter]:bg-card/80">
       <div className="mx-auto flex h-14 w-full max-w-[var(--shell-wide-max)] items-center gap-2 px-3 md:gap-3 md:px-6">
         <div className="flex min-w-0 shrink-0 items-center gap-2">
           <Link
@@ -90,26 +91,14 @@ export function ShellTopNav({ member }: { member: PublicMember }) {
           </Link>
 
           <div className="hidden items-center gap-1.5 sm:flex">
-            <Link
-              href={searchHref}
-              className="relative block w-[min(17.5rem,28vw)] min-w-[11rem]"
-              aria-label={searchPlaceholder}
-            >
-              <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                className="pointer-events-none h-8 rounded-md border-transparent bg-muted ps-9 text-sm shadow-none placeholder:text-muted-foreground"
-                placeholder={searchPlaceholder}
-                readOnly
-                tabIndex={-1}
-              />
-            </Link>
+            <ShellGlobalSearch className="w-[min(20rem,30vw)] min-w-[12rem]" />
 
             {onFeed ? (
               <button
                 type="button"
                 onClick={() => setFilterOpen(true)}
                 className={cn(
-                  "relative inline-flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+                  "relative inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors",
                   activeFilterCount > 0
                     ? "bg-[#C9A227] text-white hover:bg-[#B8911F]"
                     : "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
@@ -160,6 +149,18 @@ export function ShellTopNav({ member }: { member: PublicMember }) {
               pathname === item.href || pathname.startsWith(`${item.href}/`);
             const badge = resolveNavUnreadBadge(item.unreadBadge, navBadges);
 
+            // Bell opens a popup (latest notifications); "See all" → page.
+            if (item.unreadBadge === "notifications" && !item.comingSoon) {
+              return (
+                <NotificationsPopover
+                  key={item.href}
+                  label={item.label}
+                  icon={item.icon}
+                  badge={badge}
+                />
+              );
+            }
+
             return (
               <ShellNavLink
                 key={item.href}
@@ -177,8 +178,8 @@ export function ShellTopNav({ member }: { member: PublicMember }) {
             <ShellMeMenu member={member} active={meActive} />
           </div>
 
-          <div className="ms-1 flex h-full items-center md:border-s md:border-border md:ps-2">
-            <ThemeToggle className="h-9 w-9 md:rounded-full md:bg-muted md:text-muted-foreground md:hover:bg-muted/80 md:hover:text-foreground" />
+          <div className="ms-1 flex h-full items-center">
+            <ThemeToggle className="h-9 w-9 rounded-full text-muted-foreground hover:bg-muted hover:text-foreground" />
           </div>
         </nav>
       </div>

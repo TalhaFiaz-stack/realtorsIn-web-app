@@ -1,7 +1,8 @@
 "use client";
 
+import { useCreatePostComposer } from "@/components/feed/create-post-provider";
+
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
   Dialog,
   DialogContent,
@@ -19,7 +20,7 @@ import {
 import { showAppToast } from "@/lib/toast/app-toast";
 
 export function InfluencerPromptDialog() {
-  const router = useRouter();
+  const { openComposer } = useCreatePostComposer();
   const { data: status } = useInfluencerStatus();
   const { startChallenge, skipModal, markModalShown } = useInfluencerMutations();
   const [open, setOpen] = useState(false);
@@ -52,7 +53,7 @@ export function InfluencerPromptDialog() {
         "Challenge started",
         "Create a video post to begin counting toward your badge."
       );
-      router.push("/create");
+      openComposer("video");
     } catch (error) {
       showAppToast.fromError(error, "Could not start challenge");
     }

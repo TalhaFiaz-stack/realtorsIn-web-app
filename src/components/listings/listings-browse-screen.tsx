@@ -3,7 +3,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListingsBrowseToolbar } from "@/components/listings/listings-browse-toolbar";
 import { OffPlanProjectCard } from "@/components/listings/off-plan-project-card";
 import {
@@ -232,8 +232,26 @@ export function ListingsBrowseScreen() {
     queryFn: ({ signal }) =>
       fetchOffPlanMapProjectsClient(offPlanListFilters, signal),
     enabled: tab === "off-plan" && mapView,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 10 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
   });
+
+  // The full map list is one slow upstream call (~16s). Warm it in the
+  // background once the grid has loaded so switching to Map is usually instant.
+  const queryClient = useQueryClient();
+  const gridReady = tab === "off-plan" && !mapView && Boolean(offPlanQuery.data);
+  useEffect(() => {
+    if (!gridReady) return;
+    const timer = window.setTimeout(() => {
+      void queryClient.prefetchQuery({
+        queryKey: ["off-plan", "map", offPlanListFilters],
+        queryFn: ({ signal }) =>
+          fetchOffPlanMapProjectsClient(offPlanListFilters, signal),
+        staleTime: 10 * 60 * 1000,
+      });
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [gridReady, offPlanListFilters, queryClient]);
 
   const brokerGate = useBrokerGate();
 
@@ -274,13 +292,11 @@ export function ListingsBrowseScreen() {
   const sortToolbarControl =
     tab === "off-plan" ? (
       <div
-        className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-lg bg-background/80 p-0.5 pl-2 shadow-sm ring-1 ring-border/60"
+        className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full bg-muted/60 ps-3 pe-0.5"
         role="group"
         aria-label="Sort projects"
       >
-        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Sort
-        </span>
+        <span className="shrink-0 text-xs text-muted-foreground">Sort:</span>
         <Select
           value={offPlanFilters.sortBy ?? "default"}
           onValueChange={(v) =>
@@ -288,7 +304,7 @@ export function ListingsBrowseScreen() {
           }
         >
           <SelectTrigger
-            className="h-8 min-w-[8.5rem] max-w-[min(12rem,calc(100vw-14rem))] shrink border-0 bg-transparent px-2 text-xs font-medium shadow-none ring-0 focus:ring-0 [&>span]:line-clamp-1 [&>span]:text-start"
+            className="h-8 min-w-[7rem] max-w-[min(11rem,calc(100vw-14rem))] shrink border-0 bg-transparent px-2 text-xs font-semibold shadow-none ring-0 focus:ring-0 [&>span]:line-clamp-1 [&>span]:text-start"
             aria-label="Sort projects"
           >
             <SelectValue placeholder="Sort by" />
@@ -304,16 +320,14 @@ export function ListingsBrowseScreen() {
       </div>
     ) : tab === "secondary" || tab === "rental" ? (
       <div
-        className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-lg bg-background/80 p-0.5 pl-2 shadow-sm ring-1 ring-border/60"
+        className="inline-flex max-w-full min-w-0 items-center gap-1 rounded-full bg-muted/60 ps-3 pe-0.5"
         role="group"
         aria-label="Sort listings"
       >
-        <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Sort
-        </span>
+        <span className="shrink-0 text-xs text-muted-foreground">Sort:</span>
         <Select value={marketSortBy} onValueChange={setMarketSortBy}>
           <SelectTrigger
-            className="h-8 min-w-[8.5rem] max-w-[min(12rem,calc(100vw-14rem))] shrink border-0 bg-transparent px-2 text-xs font-medium shadow-none ring-0 focus:ring-0 [&>span]:line-clamp-1 [&>span]:text-start"
+            className="h-8 min-w-[7rem] max-w-[min(11rem,calc(100vw-14rem))] shrink border-0 bg-transparent px-2 text-xs font-semibold shadow-none ring-0 focus:ring-0 [&>span]:line-clamp-1 [&>span]:text-start"
             aria-label="Sort listings"
           >
             <SelectValue placeholder="Sort by" />
@@ -437,9 +451,11 @@ export function ListingsBrowseScreen() {
       <div className={offPlanMapMode ? "mt-2" : "mt-4"}>
         {tab === "off-plan" ? (
           mapView ? (
-            mapProjectsQuery.isLoading ? (
+            // Show the map right away with the projects already loaded for the
+            // grid; the full set streams in behind a small loading pill.
+            mapProjectsQuery.isLoading && offPlanProjects.length === 0 ? (
               <OffPlanMapBrowseSkeleton />
-            ) : mapProjectsQuery.isError ? (
+            ) : mapProjectsQuery.isError && offPlanProjects.length === 0 ? (
               <ErrorState
                 title="Unable to load map projects"
                 onRetry={() => mapProjectsQuery.refetch()}
@@ -447,6 +463,9 @@ export function ListingsBrowseScreen() {
             ) : (
               <OffPlanMapBrowseLayout
                 projects={mapProjects}
+                loadingAll={mapProjectsQuery.isFetching && !mapProjectsQuery.data}
+                loadError={mapProjectsQuery.isError && !mapProjectsQuery.data}
+                onRetryAll={() => void mapProjectsQuery.refetch()}
                 districts={filterOptions.districts}
                 selectedDistrictId={offPlanFilters.districtId}
                 selectedProjectId={selectedMapProjectId}

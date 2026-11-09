@@ -20,6 +20,10 @@ export function formatEventWhen(
   }
 }
 
+function dayKey(iso: string, timezone?: string | null): string {
+  return new Date(iso).toLocaleDateString("en-CA", { timeZone: timezone || undefined });
+}
+
 export function formatEventSchedule(
   startAt: string | null | undefined,
   endAt: string | null | undefined,
@@ -29,12 +33,16 @@ export function formatEventSchedule(
   const start = formatEventWhen(startAt, timezone);
   if (!endAt) return start;
   try {
-    const endTime = new Date(endAt).toLocaleString(undefined, {
-      hour: "numeric",
-      minute: "2-digit",
-      timeZone: timezone || undefined,
-    });
-    return `${start} – ${endTime}`;
+    const sameDay = dayKey(startAt, timezone) === dayKey(endAt, timezone);
+    // Multi-day events must show the end date too, not just a time.
+    const end = sameDay
+      ? new Date(endAt).toLocaleString(undefined, {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: timezone || undefined,
+        })
+      : formatEventWhen(endAt, timezone);
+    return `${start} – ${end}`;
   } catch {
     return start;
   }

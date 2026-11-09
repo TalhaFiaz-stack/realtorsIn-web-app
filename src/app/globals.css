@@ -570,7 +570,11 @@ a:focus-visible {
 }
 
 .chat-thread-scroller {
-  scroll-behavior: smooth;
+  /* No global smooth scroll: opening a chat / pinning must jump instantly.
+     Smooth scrolling is requested explicitly where wanted. Native scroll
+     anchoring is off: useChatThreadScroll anchors to a message itself
+     (two corrections at once would over-shoot). */
+  overflow-anchor: none;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
 }

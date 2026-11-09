@@ -1,4 +1,5 @@
 import type {
+  OffPlanResaleUnit,
   OffPlanAttachment,
   OffPlanFacility,
   OffPlanDistrict,
@@ -348,6 +349,7 @@ export function mapOffPlanProjectDetail(raw: unknown): OffPlanProjectDetail | nu
     resaleUnitsCount: Array.isArray(row.resale_units)
       ? row.resale_units.length
       : 0,
+    resaleUnits: mapOffPlanResaleUnits(row.resale_units),
     hasPaymentPlans: Array.isArray(paymentPlansJson)
       ? paymentPlansJson.length > 0
       : Boolean(paymentPlansJson),
@@ -440,4 +442,31 @@ export function flattenInventoryFloors(
     return units;
   }
   return [];
+}
+
+export function mapOffPlanResaleUnits(raw: unknown): OffPlanResaleUnit[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item): OffPlanResaleUnit | null => {
+      const row = asRecord(item);
+      const id = asNumber(row?.id);
+      if (!row || id == null) return null;
+      const positive = (v: unknown) => {
+        const n = asNumber(v);
+        return n != null && n > 0 ? n : null;
+      };
+      return {
+        id,
+        title: asString(row.title) ?? `Unit ${id}`,
+        bedrooms: asString(row.bedrooms),
+        baths: asString(row.baths),
+        areaStart: positive(row.area_start),
+        areaEnd: positive(row.area_end),
+        priceStart: positive(row.price_start),
+        priceEnd: positive(row.price_end),
+        currency: asString(row.currency),
+        paymentPlan: asString(row.payment_plan),
+      };
+    })
+    .filter((u): u is OffPlanResaleUnit => u != null);
 }

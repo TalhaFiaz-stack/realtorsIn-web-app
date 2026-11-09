@@ -13,7 +13,6 @@ const baseSchema = z.object({
   SESSION_COOKIE_MAX_AGE: z.coerce.number().int().positive().default(2592000),
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().optional(),
   NEXT_PUBLIC_FACEBOOK_APP_ID: z.string().optional(),
-  NEXT_PUBLIC_APPLE_CLIENT_ID: z.string().optional(),
 });
 
 const serverSchema = baseSchema.extend({
@@ -45,7 +44,6 @@ function readRawEnv() {
     SESSION_COOKIE_MAX_AGE: process.env.SESSION_COOKIE_MAX_AGE,
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
     NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
-    NEXT_PUBLIC_APPLE_CLIENT_ID: process.env.NEXT_PUBLIC_APPLE_CLIENT_ID,
   };
 }
 

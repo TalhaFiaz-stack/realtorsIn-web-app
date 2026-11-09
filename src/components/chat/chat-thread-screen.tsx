@@ -1,22 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   createOptimisticChatMessage,
   isOptimisticMessageId,
 } from "@/features/chat/lib/create-optimistic-message";
 import { useChatThreadScroll } from "@/features/chat/hooks/use-chat-thread-scroll";
 import { usePendingChatAttachment } from "@/features/chat/hooks/use-pending-chat-attachment";
-import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { ShellBackLink } from "@/components/navigation/shell-back-link";
-import { Paperclip, Send } from "lucide-react";
+import { AlertCircle, ArrowDown, Loader2, Paperclip, RotateCw, Send, X } from "lucide-react";
 import { ChatMediaComposerPreview } from "@/components/chat/chat-media-composer-preview";
 import { MessageBubble } from "@/components/chat/message-bubble";
+import type { ChatMessageActions } from "@/components/chat/message-actions";
+import { ChatBlockControl } from "@/components/chat/chat-block-control";
 import { PostCommentsDialog } from "@/components/feed/post-comments-dialog";
 import { Avatar, AvatarImage, AvatarPlaceholderFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useConversationPeerFromCache } from "@/features/chat/hooks/use-conversation-peer-from-cache";
 import { EmptyState } from "@/components/states/empty-state";
@@ -27,12 +27,21 @@ import {
   useEmitTyping,
   useJoinConversationRoom,
   useMarkConversationRead,
+  useMessageActions,
+  useBlockActions,
+  useBlockedUsers,
   useMessages,
   useSendChatMedia,
   useSendMessage,
 } from "@/features/chat/hooks/use-chat";
 import { useChatRealtimeContext } from "@/features/chat/hooks/chat-realtime-context";
+import { chatDayLabel, isSameChatDay } from "@/features/chat/lib/chat-day-label";
+import type { ChatMessage } from "@/features/chat/types/chat.types";
 import { cn } from "@/lib/utils";
+
+type OutboxItem = { message: ChatMessage; status: "sending" | "failed" };
+
+const COMPOSER_MAX_HEIGHT_PX = 140;
 
 export function ChatThreadScreen({
   conversationId,
@@ -46,10 +55,9 @@ export function ChatThreadScreen({
   const [draft, setDraft] = useState("");
   const [attachError, setAttachError] = useState<string | null>(null);
   const [previewPostId, setPreviewPostId] = useState<number | null>(null);
-  const [outbox, setOutbox] = useState<ReturnType<typeof createOptimisticChatMessage>[]>(
-    []
-  );
+  const [outbox, setOutbox] = useState<OutboxItem[]>([]);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  const composerRef = useRef<HTMLTextAreaElement | null>(null);
   const {
     attachment: pendingAttachment,
     pickFiles,
@@ -77,9 +85,15 @@ export function ChatThreadScreen({
   const displayMessages = useMemo(() => {
     if (outbox.length === 0) return messages;
     const serverIds = new Set(messages.map((m) => m.id));
-    const pending = outbox.filter((m) => !serverIds.has(m.id));
+    const pending = outbox
+      .map((item) => item.message)
+      .filter((m) => !serverIds.has(m.id));
     return pending.length ? [...messages, ...pending] : messages;
   }, [messages, outbox]);
+  const failedIds = useMemo(
+    () => new Set(outbox.filter((o) => o.status === "failed").map((o) => o.message.id)),
+    [outbox]
+  );
 
   const peerOnline =
     otherUser != null &&
@@ -88,33 +102,116 @@ export function ChatThreadScreen({
 
   const tailKey = useMemo(() => {
     const last = displayMessages.at(-1);
-    return `${last?.id ?? "empty"}:${last?.createdAt ?? ""}:${outbox.length}:${peerTyping ? 1 : 0}`;
-  }, [displayMessages, outbox.length, peerTyping]);
+    return `${last?.id ?? "empty"}:${displayMessages.length}:${peerTyping ? 1 : 0}`;
+  }, [displayMessages, peerTyping]);
 
-  const { scrollerRef, onScroll, scrollToBottom } = useChatThreadScroll({
-    conversationId,
-    tailKey,
-    peerTyping,
-  });
+  const { fetchNextPage } = messagesQuery;
+  const loadOlder = useCallback(() => fetchNextPage(), [fetchNextPage]);
+  const { scrollerRef, contentRef, onScroll, scrollToBottom, atBottom } =
+    useChatThreadScroll({
+      conversationId,
+      tailKey,
+      ready: Boolean(messagesQuery.data),
+      canLoadOlder: Boolean(messagesQuery.hasNextPage),
+      loadingOlder: messagesQuery.isFetchingNextPage,
+      loadOlder,
+      pageCount: pages?.length ?? 0,
+    });
+
+  // Only animate messages that arrive after the thread opened.
+  const seenIdsRef = useRef<{ conversationId: number; ids: Set<number> } | null>(null);
+  if (messagesQuery.data && seenIdsRef.current?.conversationId !== conversationId) {
+    seenIdsRef.current = {
+      conversationId,
+      ids: new Set(messages.map((m) => m.id)),
+    };
+  }
+
+  // "Jump to latest" counter: incoming messages while scrolled up.
+  const [unseenCount, setUnseenCount] = useState(0);
+  const lastTailIdRef = useRef<number | null>(null);
+  useEffect(() => {
+    const last = displayMessages.at(-1);
+    if (!last) return;
+    const previous = lastTailIdRef.current;
+    lastTailIdRef.current = last.id;
+    if (previous == null || previous === last.id) return;
+    if (!atBottom && !last.isOwn) setUnseenCount((n) => n + 1);
+  }, [displayMessages, atBottom]);
+  useEffect(() => {
+    if (atBottom) setUnseenCount(0);
+  }, [atBottom]);
 
   const sendMutation = useSendMessage(conversationId);
+  const messageActions = useMessageActions(conversationId);
+  const blockedQuery = useBlockedUsers();
+  const { unblock } = useBlockActions();
+  const peerBlocked =
+    otherUser != null &&
+    (blockedQuery.data ?? []).some((u) => u.userId === otherUser.id);
+  const bubbleActions = useMemo<ChatMessageActions>(
+    () => ({
+      onEdit: (m, content) =>
+        messageActions.edit.mutateAsync({ messageId: m.id, content }),
+      onReact: (m, emoji) =>
+        messageActions.react.mutateAsync({ messageId: m.id, emoji }),
+      onDelete: (m, forEveryone) =>
+        messageActions.remove.mutateAsync({
+          messageId: m.id,
+          deleteForEveryone: forEveryone,
+        }),
+    }),
+    [messageActions.edit, messageActions.react, messageActions.remove]
+  );
   const media = useSendChatMedia(conversationId);
-  const busy =
-    sendMutation.isPending ||
-    media.sendImage.isPending ||
-    media.sendDocument.isPending;
+  // Only attachments block the composer; text sends run concurrently.
+  const mediaBusy = media.sendImage.isPending || media.sendDocument.isPending;
 
   useEffect(() => {
     markRead.mutate(conversationId);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- open once
   }, [conversationId]);
 
+  // Messages that arrive while this chat is open are read: tell the server
+  // (otherwise the unread badge comes back and the sender never sees ✓✓).
+  const lastIncomingId = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      if (!messages[i].isOwn) return messages[i].id;
+    }
+    return null;
+  }, [messages]);
+  const readUpToRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (lastIncomingId == null) return;
+    if (readUpToRef.current == null) {
+      readUpToRef.current = lastIncomingId; // already covered by the open-time mark
+      return;
+    }
+    if (readUpToRef.current === lastIncomingId) return;
+    if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+    readUpToRef.current = lastIncomingId;
+    const timer = window.setTimeout(() => markRead.mutate(conversationId), 400);
+    return () => window.clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- markRead is stable enough
+  }, [lastIncomingId, conversationId]);
+
   useEffect(() => {
     setOutbox([]);
+    setUnseenCount(0);
+    lastTailIdRef.current = null;
+    readUpToRef.current = null;
   }, [conversationId]);
 
+  // Auto-grow the composer.
+  useLayoutEffect(() => {
+    const el = composerRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, COMPOSER_MAX_HEIGHT_PX)}px`;
+  }, [draft]);
+
   async function sendPendingAttachment(caption: string) {
-    if (!pendingAttachment || !otherUser?.id || busy) return;
+    if (!pendingAttachment || !otherUser?.id || mediaBusy) return;
     setAttachError(null);
     typing.stop();
     const captionTrimmed = caption.trim();
@@ -146,54 +243,67 @@ export function ChatThreadScreen({
     }
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!otherUser?.id || busy) return;
-
-    if (pendingAttachment) {
-      await sendPendingAttachment(draft);
-      return;
+  async function deliver(optimistic: ChatMessage) {
+    if (!otherUser?.id) return;
+    setOutbox((prev) => {
+      const without = prev.filter((o) => o.message.id !== optimistic.id);
+      return [...without, { message: optimistic, status: "sending" }];
+    });
+    try {
+      await sendMutation.mutateAsync({
+        receiverId: otherUser.id,
+        messageContent: optimistic.content,
+        optimistic,
+      });
+      // The real message is already in the thread cache — drop the placeholder.
+      setOutbox((prev) => prev.filter((o) => o.message.id !== optimistic.id));
+    } catch {
+      setOutbox((prev) =>
+        prev.map((o) =>
+          o.message.id === optimistic.id ? { ...o, status: "failed" } : o
+        )
+      );
     }
+  }
 
+  function sendText() {
+    if (!otherUser?.id) return;
     const content = draft.trim();
     if (!content) return;
     typing.stop();
     setDraft("");
-
-    const tempId = -Date.now();
     const optimistic = createOptimisticChatMessage({
-      tempId,
+      tempId: -(Date.now() + Math.floor(Math.random() * 1000)),
       conversationId,
       receiverId: otherUser.id,
       content,
     });
-    setOutbox((prev) => [...prev, optimistic]);
     scrollToBottom("smooth", true);
+    void deliver(optimistic);
+    composerRef.current?.focus();
+  }
 
-    try {
-      await sendMutation.mutateAsync({
-        receiverId: otherUser.id,
-        messageContent: content,
-      });
-      setOutbox((prev) => prev.filter((m) => m.id !== tempId));
-      scrollToBottom("smooth", true);
-    } catch {
-      setOutbox((prev) => prev.filter((m) => m.id !== tempId));
-      setDraft(content);
+  async function onSubmit(e?: React.FormEvent) {
+    e?.preventDefault();
+    if (!otherUser?.id) return;
+    if (pendingAttachment) {
+      await sendPendingAttachment(draft);
+      return;
     }
+    sendText();
   }
 
   function onPickFiles(fileList: FileList | null) {
-    if (!fileList?.length || busy) return;
+    if (!fileList?.length || mediaBusy) return;
     setAttachError(null);
     pickFiles(fileList);
     if (fileRef.current) fileRef.current.value = "";
+    composerRef.current?.focus();
   }
 
   const canSend =
     Boolean(otherUser) &&
-    !busy &&
-    (Boolean(pendingAttachment) || Boolean(draft.trim()));
+    (pendingAttachment ? !mediaBusy : Boolean(draft.trim()));
 
   const shellClass = embedded
     ? "flex min-h-0 flex-1 flex-col overflow-hidden"
@@ -283,6 +393,8 @@ export function ChatThreadScreen({
         ? "Offline"
         : realtime.error || "Connecting…";
 
+  const seenIds = seenIdsRef.current?.ids;
+
   return (
     <div className={shellClass}>
       <header className="locale-chat-thread-header flex shrink-0 items-center gap-3 border-b border-border px-3 py-3">
@@ -327,65 +439,130 @@ export function ChatThreadScreen({
               : null}
           </p>
         </div>
+        {otherUser ? (
+          <ChatBlockControl
+            userId={otherUser.id}
+            name={otherUser.name}
+            blocked={peerBlocked}
+          />
+        ) : null}
       </header>
 
-      <div
-        ref={scrollerRef}
-        onScroll={onScroll}
-        className="chat-thread-scroller min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-4"
-      >
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-3">
-          {messagesQuery.hasNextPage ? (
-            <div className="flex justify-center pb-1">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={messagesQuery.isFetchingNextPage}
-                onClick={() => void messagesQuery.fetchNextPage()}
-              >
-                {messagesQuery.isFetchingNextPage
-                  ? "Loading…"
-                  : "Load earlier messages"}
-              </Button>
-            </div>
-          ) : null}
-
-          {displayMessages.length === 0 ? (
-            <EmptyState
-              title="Say hello"
-              description="Send a text, photo, or document to start this conversation."
-              className="min-h-40 border-none"
-            />
-          ) : (
-            displayMessages.map((message) => (
-              <div
-                key={message.id}
-                className={cn(
-                  "chat-message-enter w-full max-w-full",
-                  isOptimisticMessageId(message.id) && "opacity-95"
+      <div className="relative min-h-0 flex-1">
+        <div
+          ref={scrollerRef}
+          onScroll={onScroll}
+          className="chat-thread-scroller h-full overflow-y-auto px-3 py-3 sm:px-4"
+        >
+          <div ref={contentRef} className="mx-auto flex w-full max-w-2xl flex-col gap-2">
+            {messagesQuery.hasNextPage ? (
+              <div className="flex h-8 items-center justify-center">
+                {messagesQuery.isFetchingNextPage ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-label="Loading earlier messages" />
+                ) : (
+                  <button
+                    type="button"
+                    className="rounded-full px-3 py-1 text-xs font-medium text-muted-foreground hover:bg-muted"
+                    onClick={() => void loadOlder()}
+                  >
+                    Load earlier messages
+                  </button>
                 )}
-              >
-                <MessageBubble
-                  message={message}
-                  onOpenSharedPost={setPreviewPostId}
-                />
               </div>
-            ))
-          )}
+            ) : null}
 
-          {peerTyping ? (
-            <div className="chat-message-enter flex items-center gap-2 px-1 text-xs text-muted-foreground">
-              <span className="inline-flex gap-1 rounded-full bg-muted px-2.5 py-1.5">
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.2s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.1s]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" />
-              </span>
-              <span>
-                {otherUser?.name?.split(" ")[0] ?? "They"} {`is typing…`}
-              </span>
-            </div>
-          ) : null}
+            {displayMessages.length === 0 ? (
+              <EmptyState
+                title="Say hello"
+                description="Send a text, photo, or document to start this conversation."
+                className="min-h-40 border-none"
+              />
+            ) : (
+              displayMessages.map((message, index) => {
+                const previous = index > 0 ? displayMessages[index - 1] : null;
+                const newDay = !previous || !isSameChatDay(previous.createdAt, message.createdAt);
+                const isNew = seenIds != null && !seenIds.has(message.id);
+                const failed = failedIds.has(message.id);
+                return (
+                  <Fragment key={message.id}>
+                    {newDay && message.createdAt ? (
+                      <div className="my-2 flex items-center justify-center" role="separator">
+                        <span className="rounded-full bg-muted px-3 py-0.5 text-[11px] font-medium text-muted-foreground">
+                          {chatDayLabel(message.createdAt)}
+                        </span>
+                      </div>
+                    ) : null}
+                    <div
+                      data-message-id={message.id}
+                      className={cn(
+                        "w-full max-w-full",
+                        isNew && "chat-message-enter",
+                        isOptimisticMessageId(message.id) && !failed && "opacity-90",
+                      )}
+                    >
+                      <MessageBubble
+                        message={message}
+                        onOpenSharedPost={setPreviewPostId}
+                        actions={bubbleActions}
+                      />
+                      {failed ? (
+                        <div className="mt-1 flex items-center justify-end gap-2 text-[11px]">
+                          <span className="inline-flex items-center gap-1 text-destructive">
+                            <AlertCircle className="h-3 w-3" aria-hidden />
+                            Not sent
+                          </span>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 font-semibold text-primary hover:underline"
+                            onClick={() => void deliver(message)}
+                          >
+                            <RotateCw className="h-3 w-3" aria-hidden />
+                            Retry
+                          </button>
+                          <button
+                            type="button"
+                            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+                            onClick={() =>
+                              setOutbox((prev) => prev.filter((o) => o.message.id !== message.id))
+                            }
+                          >
+                            <X className="h-3 w-3" aria-hidden />
+                            Remove
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
+                  </Fragment>
+                );
+              })
+            )}
+
+            {peerTyping ? (
+              <div className="chat-message-enter flex items-center gap-2 px-1 text-xs text-muted-foreground">
+                <span className="inline-flex gap-1 rounded-full bg-muted px-2.5 py-1.5">
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.2s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground [animation-delay:-0.1s]" />
+                  <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-muted-foreground" />
+                </span>
+                <span>
+                  {otherUser?.name?.split(" ")[0] ?? "They"} {`is typing…`}
+                </span>
+              </div>
+            ) : null}
+          </div>
         </div>
+
+        {!atBottom ? (
+          <button
+            type="button"
+            onClick={() => scrollToBottom("smooth", true)}
+            className="chat-message-enter absolute bottom-3 end-4 z-10 inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5 text-xs font-semibold shadow-lg hover:bg-muted"
+            aria-label="Jump to latest messages"
+          >
+            <ArrowDown className="h-3.5 w-3.5" aria-hidden />
+            {unseenCount > 0 ? `${unseenCount} new` : "Latest"}
+          </button>
+        ) : null}
       </div>
 
       <footer className="shrink-0 border-t border-border bg-card">
@@ -400,64 +577,89 @@ export function ChatThreadScreen({
           />
         ) : null}
 
-        <form
-          onSubmit={onSubmit}
-          className="flex items-center gap-2 px-3 py-3"
-        >
-        <input
-          ref={fileRef}
-          type="file"
-          className="hidden"
-          accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
-          multiple
-          onChange={(e) => void onPickFiles(e.target.files)}
-        />
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          disabled={!otherUser || busy}
-          aria-label="Attach file"
-          onClick={() => fileRef.current?.click()}
-        >
-          <Paperclip className="h-4 w-4" />
-        </Button>
-        <Input
-          value={draft}
-          onChange={(e) => {
-            const next = e.target.value;
-            setDraft(next);
-            typing.onDraftChange(next);
-          }}
-          placeholder={
-            pendingAttachment
-              ? "Add a caption…"
-              : otherUser
-                ? "Write a message…"
-                : "Loading recipient…"
-          }
-          disabled={!otherUser || busy}
-          maxLength={4000}
-          aria-label={pendingAttachment ? "Caption" : "Message"}
-        />
-        <Button
-          type="submit"
-          size="icon"
-          disabled={!canSend}
-          aria-label={
-            pendingAttachment ? "Send attachment" : "Send message"
-          }
-        >
-          {busy ? (
-            <InlineLoader className="text-primary-foreground" />
-          ) : (
-            <Send className="h-4 w-4" />
-          )}
-        </Button>
-        </form>
-        {sendMutation.error || attachError ? (
+        {peerBlocked ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 text-sm">
+            <p className="text-muted-foreground">
+              You blocked {otherUser?.name ?? "this member"}. Unblock to send
+              messages.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={unblock.isPending}
+              onClick={() => otherUser && unblock.mutate(otherUser.id)}
+            >
+              Unblock
+            </Button>
+          </div>
+        ) : (
+          <form onSubmit={onSubmit} className="flex items-end gap-2 px-3 py-3">
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+              multiple
+              onChange={(e) => void onPickFiles(e.target.files)}
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="shrink-0 rounded-full"
+              disabled={!otherUser || mediaBusy}
+              aria-label="Attach file"
+              onClick={() => fileRef.current?.click()}
+            >
+              <Paperclip className="h-4 w-4" />
+            </Button>
+            <textarea
+              ref={composerRef}
+              value={draft}
+              rows={1}
+              onChange={(e) => {
+                const next = e.target.value;
+                setDraft(next);
+                typing.onDraftChange(next);
+              }}
+              onKeyDown={(e) => {
+                // Enter sends, Shift+Enter adds a line; don't send mid-IME composition.
+                if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  if (canSend) void onSubmit();
+                }
+              }}
+              placeholder={
+                pendingAttachment
+                  ? "Add a caption…"
+                  : otherUser
+                    ? "Write a message…"
+                    : "Loading recipient…"
+              }
+              disabled={!otherUser || mediaBusy}
+              maxLength={4000}
+              aria-label={pendingAttachment ? "Caption" : "Message"}
+              className="min-h-10 flex-1 resize-none rounded-2xl border border-input bg-background px-4 py-2.5 text-sm leading-5 shadow-sm outline-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring/40 disabled:opacity-60"
+            />
+            <Button
+              type="submit"
+              size="icon"
+              className="shrink-0 rounded-full"
+              disabled={!canSend}
+              aria-label={pendingAttachment ? "Send attachment" : "Send message"}
+            >
+              {mediaBusy ? (
+                <InlineLoader className="text-primary-foreground" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </form>
+        )}
+        {attachError ? (
           <p className="px-4 pb-3 pt-0 text-sm text-destructive" role="alert">
-            {attachError || chatErrorMessage(sendMutation.error)}
+            {attachError}
           </p>
         ) : null}
       </footer>

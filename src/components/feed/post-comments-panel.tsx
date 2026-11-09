@@ -152,6 +152,13 @@ export function PostCommentsPanel({
             event.preventDefault();
             submitComment();
           }}
+          onKeyDown={(event) => {
+            // ⌘/Ctrl+Enter posts; plain Enter stays a newline (mentions use it).
+            if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) {
+              event.preventDefault();
+              submitComment();
+            }
+          }}
         >
           <Avatar className="mb-0.5 h-9 w-9 shrink-0">
             {viewerAvatarUrl ? (

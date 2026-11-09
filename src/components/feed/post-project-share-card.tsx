@@ -49,7 +49,7 @@ export function PostProjectShareCard({
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/20 to-transparent" />
         {project.projectStatus ? (
-          <span className="absolute start-3 top-3 rounded-full bg-white/90 px-2.5 py-0.5 text-[11px] font-semibold text-foreground">
+          <span className="absolute start-3 top-3 rounded-full bg-white/90 px-2.5 py-0.5 text-[11px] font-semibold text-neutral-900 shadow-sm">
             {project.projectStatus}
           </span>
         ) : null}

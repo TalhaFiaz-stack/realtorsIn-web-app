@@ -1,13 +1,18 @@
-export const metadata = { title: "Terms" };
+import { LegalDocumentView } from "@/components/legal/legal-document";
+import { fetchLegalDocument } from "@/features/legal/legal-page.server";
 
-export default function TermsPage() {
+export const metadata = { title: "Terms & Conditions" };
+export const revalidate = 86400;
+
+export default async function TermsPage() {
+  const doc = await fetchLegalDocument("terms");
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16 prose-none">
-      <h1 className="text-2xl font-semibold">Terms &amp; Conditions</h1>
-      <p className="mt-4 text-sm text-muted-foreground">
-        Placeholder page. Phase 2 will surface the official document URL from
-        the Social API legal-pages endpoint.
-      </p>
-    </main>
+    <LegalDocumentView
+      title="Terms & Conditions"
+      description="The rules for using RealtorsIn on web and mobile."
+      doc={doc}
+      otherHref="/legal/privacy"
+      otherLabel="Privacy Policy"
+    />
   );
 }

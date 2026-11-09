@@ -1,5 +1,8 @@
 import "server-only";
 
+import { createHash } from "node:crypto";
+import { getRemCatalogBearerToken } from "@/lib/auth/rem-catalog-token";
+
 import {
   flattenInventoryFloors,
   mapOffPlanDistricts,
@@ -112,7 +115,25 @@ function asRecord(value: unknown): Record<string, unknown> | null {
     : null;
 }
 
-export async function fetchOffPlanProjectsForMap(
+/**
+ * The off-plan API only offers `per_page=all` for the map (one ~16s, ~1.5MB
+ * response for ~2,400 projects; 30-per-page is slower overall). Cache it per
+ * user + filter set and share in-flight requests so repeat visits are instant.
+ */
+const MAP_CACHE_TTL_MS = 10 * 60 * 1000;
+const MAP_CACHE_MAX_ENTRIES = 200;
+const mapCache = new Map<
+  string,
+  { at: number; promise: Promise<OffPlanProjectSummary[]> }
+>();
+
+function mapCacheKey(token: string, filters: object): string {
+  const user = createHash("sha256").update(token).digest("hex").slice(0, 24);
+  const sorted = JSON.stringify(filters, Object.keys(filters).sort());
+  return `${user}:${sorted}`;
+}
+
+async function loadOffPlanProjectsForMap(
   filters: Omit<OffPlanListFilters, "page" | "perPageAll">
 ): Promise<OffPlanProjectSummary[]> {
   const page = await fetchOffPlanProjectsPage({
@@ -126,4 +147,24 @@ export async function fetchOffPlanProjectsForMap(
       p.lng != null &&
       p.projectStatus?.toLowerCase() !== "out of stock"
   );
+}
+
+export async function fetchOffPlanProjectsForMap(
+  filters: Omit<OffPlanListFilters, "page" | "perPageAll">
+): Promise<OffPlanProjectSummary[]> {
+  // Private projects can differ per member, so the cache is per catalog token.
+  const token = await getRemCatalogBearerToken();
+  const key = mapCacheKey(token, filters);
+  const now = Date.now();
+  const hit = mapCache.get(key);
+  if (hit && now - hit.at < MAP_CACHE_TTL_MS) return hit.promise;
+
+  const promise = loadOffPlanProjectsForMap(filters);
+  mapCache.set(key, { at: now, promise });
+  promise.catch(() => mapCache.delete(key)); // never cache failures
+  if (mapCache.size > MAP_CACHE_MAX_ENTRIES) {
+    const oldest = mapCache.keys().next().value;
+    if (oldest) mapCache.delete(oldest);
+  }
+  return promise;
 }

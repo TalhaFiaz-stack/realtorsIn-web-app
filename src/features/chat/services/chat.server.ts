@@ -13,10 +13,12 @@ import type { ChatMessage } from "@/features/chat/types/chat.types";
 import {
   backendMessage,
   isBackendSuccess,
+  mapBlockedUsers,
   mapConversationsPage,
   mapMessagesPage,
 } from "@/features/chat/lib/map-chat";
 import type {
+  BlockedChatUser,
   ConversationsPage,
   MessagesPage,
 } from "@/features/chat/types/chat.types";
@@ -607,4 +609,100 @@ export async function leaveChatConversation(
     throw new ApiError("SESSION_EXPIRED", "Session required", 401);
   }
   await leaveConversationViaSocket({ token, conversationId });
+}
+
+async function postMessageAction(
+  messageId: number,
+  action: "edit" | "react" | "delete",
+  data: Record<string, unknown>,
+  fallback: string
+): Promise<void> {
+  const payload = await socialApiRequest<unknown>({
+    path: `/api/social/chat/messages/${messageId}/${action}`,
+    method: "POST",
+    auth: true,
+    data,
+  });
+  if (!isBackendSuccess(payload)) {
+    throw new ApiError("SERVER", backendMessage(payload, fallback), 502);
+  }
+}
+
+export async function editChatMessage(input: {
+  messageId: number;
+  content: string;
+}): Promise<void> {
+  await postMessageAction(
+    input.messageId,
+    "edit",
+    { message_content: input.content },
+    "Unable to edit message"
+  );
+}
+
+export async function reactToChatMessage(input: {
+  messageId: number;
+  emoji: string;
+}): Promise<void> {
+  await postMessageAction(
+    input.messageId,
+    "react",
+    { emoji: input.emoji },
+    "Unable to react to message"
+  );
+}
+
+export async function deleteChatMessage(input: {
+  messageId: number;
+  deleteForEveryone: boolean;
+}): Promise<void> {
+  await postMessageAction(
+    input.messageId,
+    "delete",
+    { delete_for_everyone: input.deleteForEveryone },
+    "Unable to delete message"
+  );
+}
+
+/** Requires a verified phone (backend `requirePhoneVerification`). */
+export async function blockChatUser(input: {
+  userId: number;
+  reason?: string;
+}): Promise<void> {
+  const payload = await socialApiRequest<unknown>({
+    path: `/api/social/chat/block/${input.userId}`,
+    method: "POST",
+    auth: true,
+    data: input.reason ? { reason: input.reason } : {},
+  });
+  if (!isBackendSuccess(payload)) {
+    throw new ApiError("SERVER", backendMessage(payload, "Unable to block user"), 502);
+  }
+}
+
+export async function unblockChatUser(userId: number): Promise<void> {
+  const payload = await socialApiRequest<unknown>({
+    path: `/api/social/chat/block/${userId}/unblock`,
+    method: "POST",
+    auth: true,
+  });
+  if (!isBackendSuccess(payload)) {
+    throw new ApiError("SERVER", backendMessage(payload, "Unable to unblock user"), 502);
+  }
+}
+
+export async function listBlockedChatUsers(): Promise<BlockedChatUser[]> {
+  const payload = await socialApiRequest<unknown>({
+    path: "/api/social/chat/blocked-users",
+    method: "GET",
+    auth: true,
+  });
+  if (!isBackendSuccess(payload)) {
+    throw new ApiError(
+      "SERVER",
+      backendMessage(payload, "Unable to load blocked users"),
+      502
+    );
+  }
+  return mapBlockedUsers(payload);
 }

@@ -1,13 +1,18 @@
-export const metadata = { title: "Privacy" };
+import { LegalDocumentView } from "@/components/legal/legal-document";
+import { fetchLegalDocument } from "@/features/legal/legal-page.server";
 
-export default function PrivacyPage() {
+export const metadata = { title: "Privacy Policy" };
+export const revalidate = 86400;
+
+export default async function PrivacyPage() {
+  const doc = await fetchLegalDocument("privacy");
   return (
-    <main className="mx-auto max-w-2xl px-6 py-16">
-      <h1 className="text-2xl font-semibold">Privacy Policy</h1>
-      <p className="mt-4 text-sm text-muted-foreground">
-        Placeholder page. Phase 2 will surface the official document URL from
-        the Social API legal-pages endpoint.
-      </p>
-    </main>
+    <LegalDocumentView
+      title="Privacy Policy"
+      description="What we collect, how we use it, and the choices you have."
+      doc={doc}
+      otherHref="/legal/terms"
+      otherLabel="Terms & Conditions"
+    />
   );
 }

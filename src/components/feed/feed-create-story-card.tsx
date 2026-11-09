@@ -18,7 +18,7 @@ export function FeedCreateStoryCard({
 
   const inner = (
     <>
-      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#E7F3FF] text-primary">
+      <span className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
         <Plus className="h-6 w-6 stroke-[2.5]" aria-hidden />
       </span>
       <div className="min-w-0">

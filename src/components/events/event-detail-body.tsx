@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import {
   CalendarClock,
@@ -22,6 +22,8 @@ import {
   getEventLocationLabel,
 } from "@/features/events/lib/format-event";
 import type { SocialEvent } from "@/features/events/types/event.types";
+import { ProfileImageLightbox } from "@/components/profile/profile-image-lightbox";
+import { toExternalUrl } from "@/lib/format/external-url";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -91,6 +93,7 @@ export function EventDetailBody({
   onShare,
 }: Props) {
   const embedded = variant === "embedded";
+  const [viewer, setViewer] = useState<number | null>(null);
   const cover = eventCoverUrl(event);
   const place = getEventLocationLabel(event);
   const when = formatEventSchedule(event.startAt, event.endAt, event.timezone);
@@ -99,7 +102,22 @@ export function EventDetailBody({
     event.host?.userName ||
     "Host";
   const TitleTag = titleAs;
-  const showOnlineLink = Boolean(event.onlineUrl && (event.isHost || registered));
+  const onlineHref = toExternalUrl(event.onlineUrl);
+  const canSeeOnline = event.isHost || registered;
+  const showOnlineLink = Boolean(onlineHref && canSeeOnline);
+  // Host sees a warning when the saved meeting link isn't a usable URL.
+  const showBadOnlineLink = Boolean(event.onlineUrl && !onlineHref && event.isHost);
+  const hostHref = event.host?.userName
+    ? `/u/${event.host.userName}`
+    : event.host?.id
+      ? `/profile/${event.host.id}`
+      : null;
+  const spotsLeft =
+    event.capacity && event.capacity > 0 ? Math.max(event.capacity - event.goingCount, 0) : null;
+  const extraImages = event.images
+    .map((img) => img.imageUrl)
+    .filter((url): url is string => Boolean(url) && url !== cover);
+  const allImages = [cover, ...extraImages].filter((u): u is string => Boolean(u));
   const metaLine = [
     event.category || "Event",
     formatVisibilityLabel(event.visibility),
@@ -117,6 +135,13 @@ export function EventDetailBody({
         cover={cover}
         embedded={embedded}
         category={event.category}
+        onOpen={!embedded && cover ? () => setViewer(0) : undefined}
+      />
+      <ProfileImageLightbox
+        images={allImages}
+        startIndex={viewer}
+        title={event.title}
+        onClose={() => setViewer(null)}
       />
 
       <div
@@ -153,9 +178,25 @@ export function EventDetailBody({
           >
             {event.title}
           </TitleTag>
-          {!embedded && event.goingCount > 0 ? (
-            <p className="text-sm font-medium text-muted-foreground">
-              {event.goingCount} registered
+          {!embedded ? (
+            <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted-foreground">
+              <span>
+                <span className="font-semibold text-foreground">{event.goingCount}</span> registered
+              </span>
+              {spotsLeft != null ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <span className={cn(spotsLeft === 0 && "font-semibold text-destructive")}>
+                    {spotsLeft === 0 ? "Fully booked" : `${spotsLeft} spots left`}
+                  </span>
+                </>
+              ) : null}
+              {event.interestedCount > 0 ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <span>{event.interestedCount} interested</span>
+                </>
+              ) : null}
             </p>
           ) : null}
         </header>
@@ -176,7 +217,7 @@ export function EventDetailBody({
               <div className="py-2.5">
                 <EmbeddedFact icon={Video}>
                   <a
-                    href={event.onlineUrl!}
+                    href={onlineHref!}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
@@ -234,7 +275,7 @@ export function EventDetailBody({
             {showOnlineLink ? (
               <PageMetaRow icon={Video} label="Online">
                 <a
-                  href={event.onlineUrl!}
+                  href={onlineHref!}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-primary hover:underline"
@@ -242,6 +283,18 @@ export function EventDetailBody({
                   Join meeting
                   <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                 </a>
+              </PageMetaRow>
+            ) : null}
+            {showBadOnlineLink ? (
+              <PageMetaRow icon={Video} label="Online">
+                <span className="text-amber-700 dark:text-amber-400">
+                  The meeting link “{event.onlineUrl}” isn’t a valid URL — edit the event to fix it.
+                </span>
+              </PageMetaRow>
+            ) : null}
+            {!showOnlineLink && !showBadOnlineLink && event.onlineUrl && !canSeeOnline ? (
+              <PageMetaRow icon={Video} label="Online">
+                <span className="text-muted-foreground">Meeting link appears after you register</span>
               </PageMetaRow>
             ) : null}
             <PageMetaRow icon={Users} label="Host">
@@ -254,9 +307,9 @@ export function EventDetailBody({
                       ) : null}
                       <AvatarPlaceholderFallback />
                     </Avatar>
-                    {event.host.userName ? (
+                    {hostHref ? (
                       <Link
-                        href={`/u/${event.host.userName}`}
+                        href={hostHref}
                         className="font-semibold text-foreground hover:underline"
                       >
                         {hostName}
@@ -264,13 +317,13 @@ export function EventDetailBody({
                     ) : (
                       <span className="font-semibold">{hostName}</span>
                     )}
+                    {event.isHost ? (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">You</span>
+                    ) : null}
                   </>
                 ) : (
                   <span>—</span>
                 )}
-                <span className="text-muted-foreground">
-                  · {event.goingCount} registered
-                </span>
               </div>
             </PageMetaRow>
           </ul>
@@ -287,41 +340,68 @@ export function EventDetailBody({
           </section>
         ) : null}
 
+        {!embedded && extraImages.length > 0 ? (
+          <section className="space-y-2">
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Photos
+            </h3>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {allImages.map((url, i) => (
+                <button
+                  key={`${url}-${i}`}
+                  type="button"
+                  onClick={() => setViewer(i)}
+                  className="relative h-20 w-28 shrink-0 overflow-hidden rounded-lg bg-muted ring-1 ring-border/60 transition hover:opacity-90"
+                  aria-label={`View photo ${i + 1}`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" loading="lazy" className="h-full w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         {!embedded && event.status === "published" ? (
           <div className="space-y-2 border-t border-border/60 pt-5">
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               {!event.isHost ? (
-                <Button
-                  type="button"
-                  className={cn(
-                    "h-10 w-full font-semibold sm:min-w-[168px] sm:w-auto",
-                    registered &&
-                      "border-emerald-600/30 bg-emerald-50 text-emerald-900 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-100"
-                  )}
-                  variant={registered ? "outline" : "default"}
-                  disabled={rsvpPending}
-                  onClick={onToggleRegister}
-                >
-                  {registered && !rsvpPending ? (
-                    <CheckCircle2 className="mr-1.5 h-4 w-4 shrink-0" aria-hidden />
-                  ) : null}
-                  {rsvpPending
-                    ? "Updating…"
-                    : registered
-                      ? "Cancel registration"
-                      : "Register"}
-                </Button>
+                registered ? (
+                  <div className="flex h-10 w-full items-center justify-center gap-1.5 rounded-full border border-emerald-600/30 bg-emerald-500/10 px-5 text-sm font-semibold text-emerald-800 dark:text-emerald-300 sm:w-auto">
+                    <CheckCircle2 className="h-4 w-4 shrink-0" aria-hidden />
+                    You’re registered
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    className="h-10 w-full rounded-full px-6 font-semibold sm:w-auto"
+                    disabled={rsvpPending || spotsLeft === 0}
+                    onClick={onToggleRegister}
+                  >
+                    {rsvpPending ? "Registering…" : spotsLeft === 0 ? "Fully booked" : "Register"}
+                  </Button>
+                )
               ) : null}
               <Button
                 type="button"
                 variant="outline"
-                className="h-10 w-full sm:w-auto"
+                className="h-10 w-full rounded-full sm:w-auto"
                 onClick={onShare}
               >
                 <Share2 className="mr-1.5 h-4 w-4" aria-hidden />
                 Share
               </Button>
             </div>
+            {registered && !event.isHost ? (
+              <button
+                type="button"
+                disabled={rsvpPending}
+                onClick={onToggleRegister}
+                className="text-xs font-medium text-muted-foreground hover:text-destructive hover:underline disabled:opacity-50"
+              >
+                {rsvpPending ? "Cancelling…" : "Can’t make it? Cancel registration"}
+              </button>
+            ) : null}
             {rsvpError ? (
               <p className="text-sm text-destructive" role="alert">
                 {rsvpError}

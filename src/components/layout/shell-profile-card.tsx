@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { Bookmark, Camera, Loader2, Mail, Pencil, Phone } from "lucide-react";
+import { Bookmark, Camera, Loader2, MapPin, Pencil } from "lucide-react";
 import { ProfilePhotoCropDialog } from "@/components/profile/profile-photo-crop-dialog";
 import { ProfileNameBadges } from "@/components/profile/profile-badges";
 import { ProfileShareMenu } from "@/components/profile/profile-share-menu";
@@ -22,13 +22,6 @@ import { useProfilePhotoUpload } from "@/features/profile/hooks/use-profile-phot
 import { useOwnProfile } from "@/features/profile/hooks/use-profile";
 import type { SocialProfile } from "@/features/profile/types/profile.types";
 
-function initials(name: string) {
-  return name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() ?? "")
-    .join("");
-}
 
 function formatCount(value: number): string {
   if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
@@ -36,29 +29,7 @@ function formatCount(value: number): string {
   return String(value);
 }
 
-function displayPhone(
-  profile: SocialProfile | undefined,
-  member: PublicMember,
-): string | null {
-  const formatted = profile?.formattedPhone?.trim();
-  if (formatted) return formatted;
-  const phone = profile?.phone?.trim() || member.phone?.trim();
-  if (!phone) return null;
-  if (phone.startsWith("+")) return phone;
-  const dial =
-    profile?.phoneDialCode?.trim() || member.phoneDialCode?.trim() || "";
-  const digits = dial.replace(/\D/g, "");
-  if (digits) return `+${digits} ${phone}`;
-  return phone;
-}
 
-function displayEmail(
-  profile: SocialProfile | undefined,
-  member: PublicMember,
-): string | null {
-  const email = profile?.email?.trim() || member.email?.trim();
-  return email || null;
-}
 
 function headlineFromProfile(
   profile: SocialProfile | undefined,
@@ -99,8 +70,6 @@ export function ShellProfileCard({ member }: { member: PublicMember }) {
     [member.userRole, member.company].filter(Boolean).join(" at ") ||
     member.description;
   const location = profile?.location || member.location;
-  const phone = displayPhone(profile, member);
-  const email = displayEmail(profile, member);
   const completion =
     profile?.profileCompletionPercentage ?? member.profileCompletionPercentage;
   const viewers = profile?.analytics?.profileViewers ?? null;
@@ -111,8 +80,8 @@ export function ShellProfileCard({ member }: { member: PublicMember }) {
   });
 
   return (
-    <section className="overflow-hidden rounded-lg border border-border bg-card">
-      <div className="relative h-14 bg-[#cfd9de]">
+    <section className="overflow-hidden rounded-xl border border-border/70 bg-card shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <div className="relative h-16 bg-[#cfd9de]">
         {coverUrl ? (
           <RemoteImage
             src={coverUrl}
@@ -124,7 +93,7 @@ export function ShellProfileCard({ member }: { member: PublicMember }) {
             unoptimized
           />
         ) : (
-          <div className="absolute inset-0 bg-gradient-to-r from-[#b0bec5] via-[#cfd9de] to-[#dfe6ea]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/70 via-primary/40 to-sky-300/40" />
         )}
         {profile ? (
           <>
@@ -157,7 +126,7 @@ export function ShellProfileCard({ member }: { member: PublicMember }) {
         ) : null}
       </div>
 
-      <div className="relative px-3 pb-3 pt-0">
+      <div className="relative flex flex-col items-center px-4 pb-4 pt-0 text-center">
         {profile ? (
           <input
             ref={photoUpload.profileInputRef}
@@ -170,7 +139,7 @@ export function ShellProfileCard({ member }: { member: PublicMember }) {
           />
         ) : null}
         {hasOwnStory && ownStoryGroup ? (
-          <div className="relative -mt-8 inline-block">
+          <div className="relative -mt-9 inline-block">
             <button
               type="button"
               onClick={() => setStoryViewerOpen(true)}
@@ -179,9 +148,10 @@ export function ShellProfileCard({ member }: { member: PublicMember }) {
             >
               <StoryAvatarRing
                 hasUnseen={ownStoryGroup.hasUnseen}
-                className="h-[68px] w-[68px]"
+                stories={ownStoryGroup.stories}
+                className="h-[80px] w-[80px]"
               >
-                <Avatar className="h-16 w-16 border-2 border-card">
+                <Avatar className="h-[72px] w-[72px] border-2 border-card">
                   {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
                   <AvatarPlaceholderFallback />
                 </Avatar>
@@ -203,9 +173,9 @@ export function ShellProfileCard({ member }: { member: PublicMember }) {
             ) : null}
           </div>
         ) : (
-          <div className="relative -mt-8 inline-block">
-            <Link href="/me" className="block rounded-full ring-2 ring-card">
-              <Avatar className="h-16 w-16">
+          <div className="relative -mt-9 inline-block">
+            <Link href="/me" className="block rounded-full ring-[3px] ring-card">
+              <Avatar className="h-[72px] w-[72px]">
                 {avatarUrl ? <AvatarImage src={avatarUrl} alt="" /> : null}
                 <AvatarPlaceholderFallback />
               </Avatar>
@@ -238,9 +208,9 @@ export function ShellProfileCard({ member }: { member: PublicMember }) {
           onConfirm={photoUpload.confirmCrop}
         />
 
-        <Link href="/me" className="mt-2 block group">
-          <span className="inline-flex max-w-full items-center gap-1">
-            <p className="truncate text-[15px] font-semibold text-foreground group-hover:underline">
+        <Link href="/me" className="group mt-2 block max-w-full">
+          <span className="inline-flex max-w-full items-center justify-center gap-1">
+            <p className="truncate text-base font-semibold text-foreground group-hover:underline">
               {displayName}
             </p>
             {profile ? <ProfileNameBadges profile={profile} /> : null}
@@ -252,93 +222,67 @@ export function ShellProfileCard({ member }: { member: PublicMember }) {
         ) : null}
 
         {headline ? (
-          <p className="mt-0.5 line-clamp-2 text-xs leading-snug text-muted-foreground">
+          <p className="mt-1.5 line-clamp-2 text-xs leading-snug text-foreground/80">
             {headline}
           </p>
         ) : null}
 
         {location ? (
-          <p className="mt-1 truncate text-xs text-muted-foreground">
-            {location}
+          <p className="mt-1 flex max-w-full items-center gap-1 text-[11px] text-muted-foreground">
+            <MapPin className="h-3 w-3 shrink-0" aria-hidden />
+            <span className="truncate">{location}</span>
           </p>
-        ) : null}
-
-        {phone ? (
-          <a
-            href={`tel:${phone.replace(/\s/g, "")}`}
-            className="mt-1 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
-          >
-            <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span className="truncate">{phone}</span>
-          </a>
-        ) : null}
-
-        {email ? (
-          <a
-            href={`mailto:${email}`}
-            className="mt-0.5 flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground hover:underline"
-          >
-            <Mail className="h-3.5 w-3.5 shrink-0" aria-hidden />
-            <span className="truncate">{email}</span>
-          </a>
         ) : null}
 
         {completion < 100 ? (
           <Link
             href="/me"
-            className="mt-2 block text-xs font-semibold text-primary hover:underline"
+            className="mt-3 block w-full rounded-lg bg-muted/50 px-3 py-2 text-start transition-colors hover:bg-muted"
           >
-            Profile {completion}% complete · Finish setup
+            <span className="flex items-center justify-between text-[11px]">
+              <span className="font-medium text-foreground">Complete your profile</span>
+              <span className="font-semibold text-primary">{completion}%</span>
+            </span>
+            <span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-border">
+              <span
+                className="block h-full rounded-full bg-primary transition-[width]"
+                style={{ width: `${Math.max(4, Math.min(100, completion))}%` }}
+              />
+            </span>
           </Link>
         ) : null}
       </div>
 
-      <div className="border-t border-border px-3 py-2">
-        <StatRow
-          label={t("Profile viewers")}
+      <div className="grid grid-cols-3 divide-x divide-border/70 border-t border-border/70">
+        <StatTile
+          label={t("Viewers")}
           value={viewers != null ? formatCount(viewers) : "—"}
           href="/me/viewers"
         />
-        <StatRow
-          label={t("Post impressions")}
+        <StatTile
+          label={t("Impressions")}
           value={impressions != null ? formatCount(impressions) : "—"}
           href="/me/analytics"
         />
-      </div>
-
-      <div className="border-t border-border">
-        <Link
+        <StatTile
+          label={t("Connections")}
+          value={connections != null ? formatCount(connections) : "—"}
           href="/connections"
-          className="flex items-center justify-between px-3 py-2.5 text-sm hover:bg-muted"
-        >
-          <span>
-            <span className="block text-xs text-muted-foreground">
-              {t("Connections")}
-            </span>
-            <span className="font-semibold text-foreground">
-              {t("Build your professional network")}
-            </span>
-          </span>
-          <span className="text-sm font-semibold text-primary">
-            {connections != null ? formatCount(connections) : t("Network")}
-          </span>
-        </Link>
+        />
       </div>
 
-      <div className="border-t border-border">
-        <Link
-          href="/activities"
-          className="flex items-center gap-2 px-3 py-2.5 text-sm font-semibold text-foreground hover:bg-muted"
-        >
-          <Bookmark className="h-4 w-4 text-muted-foreground" />
-          {t("Saved Posts")}
-        </Link>
-      </div>
+      <Link
+        href="/activities"
+        className="flex items-center gap-2.5 border-t border-border/70 px-4 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/60"
+      >
+        <Bookmark className="h-4 w-4 text-muted-foreground" aria-hidden />
+        {t("Saved Posts")}
+      </Link>
     </section>
   );
 }
 
-function StatRow({
+function StatTile({
   label,
   value,
   href,
@@ -350,10 +294,10 @@ function StatRow({
   return (
     <Link
       href={href}
-      className="flex items-center justify-between py-1 text-xs hover:underline"
+      className="flex flex-col items-center gap-0.5 px-1 py-3 transition-colors hover:bg-muted/60"
     >
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-semibold text-primary">{value}</span>
+      <span className="text-sm font-semibold tabular-nums text-foreground">{value}</span>
+      <span className="truncate text-[11px] text-muted-foreground">{label}</span>
     </Link>
   );
 }

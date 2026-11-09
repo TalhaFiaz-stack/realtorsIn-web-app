@@ -8,7 +8,13 @@ import { buildGenericShareMessage } from "@/features/chat/lib/content-share";
 import { propertyListingHref } from "@/features/properties/lib/property-listing-routes";
 import type { PropertyListing } from "@/features/properties/types/property-hub.types";
 
-export function PropertyListingShare({ listing }: { listing: PropertyListing }) {
+export function PropertyListingShare({
+  listing,
+  className,
+}: {
+  listing: PropertyListing;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   const listingPath = useMemo(
     () => propertyListingHref(listing.listingRowId, listing),
@@ -31,10 +37,10 @@ export function PropertyListingShare({ listing }: { listing: PropertyListing }) 
         type="button"
         variant="outline"
         size="sm"
-        className="w-full sm:w-auto"
+        className={className ?? "w-full sm:w-auto"}
         onClick={() => setOpen(true)}
       >
-        <Share2 className="mr-1.5 h-3.5 w-3.5" aria-hidden />
+        <Share2 className="h-4 w-4" aria-hidden />
         Share
       </Button>
       <ContentShareDialog

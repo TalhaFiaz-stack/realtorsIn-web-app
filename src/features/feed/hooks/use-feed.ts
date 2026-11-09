@@ -26,6 +26,7 @@ import {
   profilePostsPrefix,
 } from "@/features/feed/lib/patch-feed-caches";
 import type { FeedPost } from "@/features/feed/types/post.types";
+import { FEED_LIST_PAGE_SIZE } from "@/features/feed/constants/feed.constants";
 import { ApiError } from "@/lib/api/errors";
 
 export const feedQueryKey = ["feed", "home"] as const;
@@ -67,8 +68,10 @@ export function useFeed(filters?: FeedQueryFilters) {
     queryFn: ({ pageParam, signal }) =>
       fetchFeedPageRequest({
         page: pageParam,
-        perPage: 20,
-        refreshFeed: pageParam === 1,
+        perPage: FEED_LIST_PAGE_SIZE,
+        // Mobile parity: `refresh_feed` only on explicit pull-to-refresh
+        // (see useFeedPullRefresh), never on normal loads.
+        refreshFeed: false,
         feedType: filters?.feedType,
         propertyCategory: filters?.propertyCategory,
         listingTransaction: filters?.listingTransaction,
@@ -77,6 +80,11 @@ export function useFeed(filters?: FeedQueryFilters) {
       }),
     getNextPageParam: (last) =>
       last.hasNextPage ? last.page + 1 : undefined,
+    // Backend feed is slow (~5s/page). Returning to Home within a few minutes
+    // should show the cached list instantly instead of re-fetching every
+    // loaded page; pull-to-refresh / the refresh button still force fresh data.
+    staleTime: 2 * 60_000,
+    gcTime: 15 * 60_000,
   });
 
   const posts = dedupePosts(

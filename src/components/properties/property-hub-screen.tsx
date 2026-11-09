@@ -36,6 +36,7 @@ import {
   usePropertyHubList,
 } from "@/features/properties/hooks/use-property-hub";
 import type { PropertyHubListFilters } from "@/features/properties/types/property-hub.types";
+import { cn } from "@/lib/utils";
 import { PropertyHubHeader } from "@/components/properties/property-hub-header";
 
 const EMPTY_FILTER_DRAFT: PropertyHubFilterDraft = {
@@ -121,15 +122,18 @@ export function PropertyHubScreen() {
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
-              variant={activeFilterCount > 0 ? "default" : "outline"}
+              variant="outline"
               size="sm"
-              className="h-9 gap-2 rounded-lg px-3 shadow-none"
+              className={cn(
+                "h-9 gap-2 rounded-full border-border/70 px-4 shadow-none",
+                activeFilterCount > 0 && "border-primary/40 bg-primary/5 text-primary"
+              )}
               onClick={() => setFiltersOpen(true)}
             >
               <SlidersHorizontal className="h-4 w-4" aria-hidden />
               Filters
               {activeFilterCount > 0 ? (
-                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-md bg-primary-foreground/20 px-1 text-[10px] font-bold tabular-nums">
+                <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[10px] font-bold tabular-nums text-primary-foreground">
                   {activeFilterCount}
                 </span>
               ) : null}
@@ -140,7 +144,7 @@ export function PropertyHubScreen() {
                 type="button"
                 variant="ghost"
                 size="sm"
-                className="h-9 text-muted-foreground"
+                className="h-9 rounded-full text-muted-foreground"
                 onClick={resetFilters}
               >
                 Clear
@@ -148,13 +152,11 @@ export function PropertyHubScreen() {
             ) : null}
 
             <div
-              className="ms-auto inline-flex min-w-0 items-center gap-2 rounded-lg bg-background/80 p-0.5 ps-2 shadow-sm ring-1 ring-border/60"
+              className="ms-auto inline-flex min-w-0 items-center gap-1 rounded-full bg-muted/60 ps-3 pe-0.5"
               role="group"
               aria-label="Sort listings"
             >
-              <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                Sort
-              </span>
+              <span className="shrink-0 text-xs text-muted-foreground">Sort:</span>
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger
                   className="h-8 min-w-[7.5rem] border-0 bg-transparent px-2 text-xs font-medium shadow-none ring-0 focus:ring-0 [&>span]:line-clamp-1 [&>span]:text-start"

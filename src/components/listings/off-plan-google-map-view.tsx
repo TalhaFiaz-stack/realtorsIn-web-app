@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   GoogleMap,
   OverlayView,
@@ -8,7 +8,7 @@ import {
   useJsApiLoader,
 } from "@react-google-maps/api";
 import "./off-plan-map.css";
-import { OffPlanMapLegend } from "@/components/listings/off-plan-map-legend";
+import { OffPlanMapTopStart } from "@/components/listings/off-plan-map-legend";
 import { OffPlanMapPopupCard } from "@/components/listings/off-plan-map-popup-card";
 import type { OffPlanDistrict, OffPlanProjectSummary } from "@/features/off-plan/types/off-plan.types";
 import { buildDistrictColorMap } from "@/features/off-plan/lib/district-map-colors";
@@ -44,6 +44,23 @@ function clusterSize(count: number): number {
   return 36;
 }
 
+/** Rough UAE box — ignores projects with bad coordinates when fitting the view. */
+const UAE_BOUNDS = { minLat: 22.4, maxLat: 26.5, minLng: 51.0, maxLng: 56.6 };
+
+function inUae(lat: number, lng: number): boolean {
+  return (
+    lat >= UAE_BOUNDS.minLat &&
+    lat <= UAE_BOUNDS.maxLat &&
+    lng >= UAE_BOUNDS.minLng &&
+    lng <= UAE_BOUNDS.maxLng
+  );
+}
+
+/**
+ * Fit the view to the projects once per result set, and never after the
+ * user has moved the map. Outliers outside the UAE are ignored (one bad
+ * coordinate used to zoom the map out to Iran/Oman).
+ */
 function FitProjectsBounds({
   map,
   projects,
@@ -51,13 +68,49 @@ function FitProjectsBounds({
   map: google.maps.Map;
   projects: OffPlanProjectSummary[];
 }) {
+  const userMovedRef = useRef(false);
+  const fittedKeyRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (!map || typeof google === "undefined") return;
-    const withCoords = projects.filter((p) => p.lat != null && p.lng != null);
-    if (withCoords.length < 2) return;
+    const listeners = [
+      map.addListener("dragstart", () => {
+        userMovedRef.current = true;
+      }),
+      map.addListener("zoom_changed", () => {
+        // Programmatic fitBounds also zooms; only count it once fitted.
+        if (fittedKeyRef.current) userMovedRef.current = true;
+      }),
+    ];
+    return () => listeners.forEach((l) => l.remove());
+  }, [map]);
+
+  useEffect(() => {
+    if (!map || typeof google === "undefined" || userMovedRef.current) return;
+    const points = projects.filter(
+      (p) => p.lat != null && p.lng != null && inUae(p.lat, p.lng)
+    );
+    const key = `${points.length}:${points[0]?.id ?? ""}:${points.at(-1)?.id ?? ""}`;
+    if (fittedKeyRef.current === key) return;
+    fittedKeyRef.current = null;
     const bounds = new google.maps.LatLngBounds();
-    withCoords.forEach((p) => bounds.extend({ lat: p.lat!, lng: p.lng! }));
-    map.fitBounds(bounds, 48);
+    if (points.length >= 2) {
+      // Fit the central 90% so a few far-off projects don't zoom the view out.
+      const lats = points.map((p) => p.lat!).sort((x, y) => x - y);
+      const lngs = points.map((p) => p.lng!).sort((x, y) => x - y);
+      const lo = Math.floor((points.length - 1) * 0.05);
+      const hi = Math.ceil((points.length - 1) * 0.95);
+      bounds.extend({ lat: lats[lo], lng: lngs[lo] });
+      bounds.extend({ lat: lats[hi], lng: lngs[hi] });
+    } else {
+      bounds.extend({ lat: UAE_BOUNDS.minLat, lng: UAE_BOUNDS.minLng });
+      bounds.extend({ lat: UAE_BOUNDS.maxLat, lng: UAE_BOUNDS.maxLng });
+    }
+    map.fitBounds(bounds, 56);
+    // Mark fitted after the zoom event fired by fitBounds settles.
+    const once = google.maps.event.addListenerOnce(map, "idle", () => {
+      fittedKeyRef.current = key;
+    });
+    return () => once.remove();
   }, [map, projects]);
   return null;
 }
@@ -253,6 +306,7 @@ export function OffPlanGoogleMapView({
   selectedProject,
   onOpenProject,
   className,
+  overlayStart,
 }: {
   apiKey: string;
   projects: OffPlanProjectSummary[];
@@ -263,6 +317,7 @@ export function OffPlanGoogleMapView({
   selectedProject?: OffPlanProjectSummary | null;
   onOpenProject?: () => void;
   className?: string;
+  overlayStart?: React.ReactNode;
 }) {
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
 
@@ -296,11 +351,11 @@ export function OffPlanGoogleMapView({
   return (
     <div
       className={cn(
-        "relative h-[min(70vh,520px)] w-full overflow-hidden rounded-xl border border-border",
+        "relative isolate h-[min(70vh,520px)] w-full overflow-hidden rounded-xl border border-border",
         className
       )}
     >
-      <OffPlanMapLegend />
+      <OffPlanMapTopStart leading={overlayStart} />
       <GoogleMap
         mapContainerStyle={MAP_CONTAINER_STYLE}
         center={DEFAULT_CENTER}

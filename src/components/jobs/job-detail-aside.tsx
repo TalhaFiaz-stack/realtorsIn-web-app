@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CheckCircle2, ExternalLink, Share2 } from "lucide-react";
+import { CheckCircle2, ExternalLink, Mail, Share2 } from "lucide-react";
+import { formatRelativeTime } from "@/lib/format-relative-time";
+import { toExternalUrl } from "@/lib/format/external-url";
 import { ContentShareDialog } from "@/components/chat/content-share-dialog";
 import { JobListingStatusDropdown } from "@/components/jobs/job-listing-status-dropdown";
 import {
@@ -56,8 +58,15 @@ export function JobDetailAside({
   const salary = formatJobSalary(job);
   const statusClass = JOB_STATUS_STYLES[job.status] ?? JOB_STATUS_STYLES.active;
   const canApplyInApp = !job.hasApplied && job.status === "active" && !isOwner;
-  const showExternal =
-    Boolean(job.applicationUrl) && !job.hasApplied && job.status === "active";
+  const externalHref = toExternalUrl(job.applicationUrl);
+  const showExternal = Boolean(externalHref) && !job.hasApplied && job.status === "active" && !isOwner;
+  const applyEmail = job.applicationEmail?.includes("@") ? job.applicationEmail.trim() : null;
+  const showEmail = Boolean(applyEmail) && !job.hasApplied && job.status === "active" && !isOwner;
+  const posterHref = job.poster?.userName
+    ? `/u/${job.poster.userName}`
+    : job.poster?.id
+      ? `/profile/${job.poster.id}`
+      : null;
 
   return (
     <aside className="lg:sticky lg:top-[4.25rem] lg:self-start">
@@ -73,7 +82,15 @@ export function JobDetailAside({
                 <div>
                   <p className="text-sm font-semibold text-foreground">
                     You applied
+                    {job.appliedAt ? (
+                      <span className="font-normal text-muted-foreground"> · {formatRelativeTime(job.appliedAt)}</span>
+                    ) : null}
                   </p>
+                  {job.applicationStatus ? (
+                    <p className="mt-0.5 text-xs font-semibold capitalize text-primary">
+                      Status: {job.applicationStatus.replace(/_/g, " ")}
+                    </p>
+                  ) : null}
                   <p className="text-xs text-muted-foreground">
                     The poster can review your profile and reach out.
                   </p>
@@ -83,21 +100,27 @@ export function JobDetailAside({
             {canApplyInApp ? (
               <Button
                 type="button"
-                className="h-11 w-full rounded-lg text-base font-semibold"
+                className="h-11 w-full rounded-full text-base font-semibold"
                 onClick={onApply}
               >
                 Easy Apply
               </Button>
             ) : null}
             {showExternal ? (
-              <Button asChild variant="outline" className="h-11 w-full rounded-lg">
+              <Button asChild variant="outline" className="h-10 w-full rounded-full">
+                <a href={externalHref!} target="_blank" rel="noopener noreferrer">
+                  Apply on company website
+                  <ExternalLink className="ml-1.5 h-4 w-4" aria-hidden />
+                </a>
+              </Button>
+            ) : null}
+            {showEmail ? (
+              <Button asChild variant="ghost" className="h-9 w-full rounded-full text-sm">
                 <a
-                  href={job.applicationUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={`mailto:${applyEmail}?subject=${encodeURIComponent(`Application: ${job.title}`)}`}
                 >
-                  Company website
-                  <ExternalLink className="ml-2 h-4 w-4" aria-hidden />
+                  <Mail className="mr-1.5 h-4 w-4" aria-hidden />
+                  Apply by email
                 </a>
               </Button>
             ) : null}
@@ -136,6 +159,10 @@ export function JobDetailAside({
             </div>
           ) : null}
           <div className="flex justify-between gap-3">
+            <dt className="text-muted-foreground">Applicants</dt>
+            <dd className="text-end font-medium tabular-nums">{job.applicationsCount}</dd>
+          </div>
+          <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">Listing</dt>
             <dd>
               <span
@@ -160,9 +187,9 @@ export function JobDetailAside({
             </Avatar>
             <div className="min-w-0 text-sm">
               <p className="text-xs text-muted-foreground">Hiring contact</p>
-              {job.poster.userName ? (
+              {posterHref ? (
                 <Link
-                  href={`/u/${job.poster.userName}`}
+                  href={posterHref}
                   className="font-semibold text-foreground hover:text-primary hover:underline"
                 >
                   {posterName}
@@ -210,7 +237,7 @@ export function JobDetailAside({
               type="button"
               variant="outline"
               size="sm"
-              className="w-full rounded-md"
+              className="w-full rounded-full"
               onClick={() => setShareOpen(true)}
             >
               <Share2 className="mr-1.5 h-3.5 w-3.5" aria-hidden />

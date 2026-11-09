@@ -1,5 +1,6 @@
 "use client";
 
+import { CalendarDays, Plus } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { EventCard } from "@/components/events/event-card";
@@ -101,13 +102,14 @@ export function EventsHubScreen() {
         <HubControlCardHeader>
           <HubModuleHeader
             title="Events"
+            subtitle="Discover, host and RSVP to industry events"
+            icon={CalendarDays}
             action={
-              <Button
-                asChild
-                size="sm"
-                className="h-9 rounded-lg px-3 shadow-none"
-              >
-                <Link href="/events/create">Create</Link>
+              <Button asChild size="sm" className="h-9 gap-1.5 rounded-full px-4 shadow-none">
+                <Link href="/events/create">
+                  <Plus className="h-4 w-4" aria-hidden />
+                  Create event
+                </Link>
               </Button>
             }
           />

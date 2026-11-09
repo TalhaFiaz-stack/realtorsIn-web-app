@@ -26,6 +26,11 @@ import {
   useToggleSave,
 } from "@/features/feed/hooks/use-feed";
 import type { SearchTab } from "@/features/feed/types/search.types";
+import {
+  useFollowHashtag,
+  useFollowedHashtags,
+  useUnfollowHashtag,
+} from "@/features/hashtag/hooks/use-followed-hashtags";
 import { ApiError } from "@/lib/api/errors";
 import { cn } from "@/lib/utils";
 
@@ -41,6 +46,35 @@ function initials(name: string) {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+function HashtagFollowButton({
+  label,
+  following,
+  busy,
+  onFollow,
+  onUnfollow,
+}: {
+  label: string;
+  following: boolean;
+  busy: boolean;
+  onFollow: () => void;
+  onUnfollow: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      size="sm"
+      variant={following ? "outline" : "default"}
+      className="h-8 shrink-0 rounded-full px-3 text-xs"
+      disabled={busy}
+      aria-pressed={following}
+      aria-label={`${following ? "Unfollow" : "Follow"} #${label}`}
+      onClick={following ? onUnfollow : onFollow}
+    >
+      {following ? "Following" : "Follow"}
+    </Button>
+  );
 }
 
 export function SearchScreen({
@@ -61,6 +95,12 @@ export function SearchScreen({
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const search = useSearch(tab, committed, true);
+  const followedQuery = useFollowedHashtags();
+  const followMutation = useFollowHashtag();
+  const unfollowMutation = useUnfollowHashtag();
+  const followedIds = new Set(
+    (followedQuery.data?.tags ?? []).map((t) => t.id)
+  );
   const likeMutation = useToggleLike();
   const saveMutation = useToggleSave();
 
@@ -315,16 +355,19 @@ export function SearchScreen({
                 {search.tags.map((tag) => {
                   const label = tag.tag.replace(/^#/, "");
                   return (
-                    <li key={`${tag.hashtagId}-${tag.tag}`}>
+                    <li
+                      key={`${tag.hashtagId}-${tag.tag}`}
+                      className="flex items-center gap-2 pe-3 hover:bg-muted/50"
+                    >
                       <button
                         type="button"
-                        className="flex w-full items-center gap-3 px-4 py-3 text-start hover:bg-muted/50"
+                        className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-start"
                         onClick={() => {
                           setTab("foryou");
                           submit(label);
                         }}
                       >
-                        <span className="inline-flex h-11 w-11 items-center justify-center rounded-full bg-muted text-lg font-bold text-primary">
+                        <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-muted text-lg font-bold text-primary">
                           #
                         </span>
                         <span className="min-w-0 flex-1">
@@ -336,6 +379,23 @@ export function SearchScreen({
                           </span>
                         </span>
                       </button>
+                      <HashtagFollowButton
+                        label={label}
+                        following={tag.hashtagId != null && followedIds.has(tag.hashtagId)}
+                        busy={followMutation.isPending || unfollowMutation.isPending}
+                        onFollow={() =>
+                          followMutation.mutate({
+                            hashtagId: tag.hashtagId ?? undefined,
+                            hashtag: label,
+                          })
+                        }
+                        onUnfollow={() =>
+                          unfollowMutation.mutate({
+                            hashtagId: tag.hashtagId ?? undefined,
+                            hashtag: label,
+                          })
+                        }
+                      />
                     </li>
                   );
                 })}

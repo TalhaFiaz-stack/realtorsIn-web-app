@@ -11,11 +11,22 @@ export async function fetchFollowedHashtagsRequest(signal?: AbortSignal) {
 }
 
 export async function unfollowHashtagRequest(input: {
-  hashtagId: number;
-  hashtag: string;
+  hashtagId?: number;
+  hashtag?: string;
 }) {
   return bffRequest<{ ok: true; message: string }>({
     path: "posts/hashtag/follow/remove",
+    method: "POST",
+    data: input,
+  });
+}
+
+export async function followHashtagRequest(input: {
+  hashtagId?: number;
+  hashtag?: string;
+}) {
+  return bffRequest<{ ok: true; message: string }>({
+    path: "posts/hashtag/follow/store",
     method: "POST",
     data: input,
   });

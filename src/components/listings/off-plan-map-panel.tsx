@@ -36,6 +36,8 @@ export function OffPlanMapPanel(props: {
   selectedProject?: OffPlanProjectSummary | null;
   onOpenProject?: () => void;
   className?: string;
+  /** Rendered before the legend in the map's top-left overlay row. */
+  overlayStart?: React.ReactNode;
 }) {
   const keyQuery = useQuery({
     queryKey: ["google-maps-key"],

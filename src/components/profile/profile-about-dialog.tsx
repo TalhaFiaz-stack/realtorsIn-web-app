@@ -1,15 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Check, FileText } from "lucide-react";
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+  CharCount,
+  FormField,
+  ProfileFormDialog,
+} from "@/components/profile/profile-form-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import {
   mutationErrorMessage,
@@ -48,81 +45,71 @@ export function ProfileAboutDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Edit about</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-3">
-          <div className="space-y-1.5">
-            <Label>About</Label>
-            <Textarea
-              value={aboutText}
-              onChange={(e) => setAboutText(e.target.value)}
-              maxLength={2600}
-              className="min-h-40"
-            />
-            <p className="text-xs text-muted-foreground">
-              {aboutText.length}/2600
-            </p>
-          </div>
-          {profile.skills.length > 0 ? (
-            <div className="space-y-2">
-              <Label>Top skills (max 5)</Label>
-              <div className="flex flex-wrap gap-2">
-                {profile.skills.map((skill) => {
-                  const selected = topSkillIds.includes(skill.id);
-                  return (
-                    <button
-                      key={skill.id}
-                      type="button"
-                      onClick={() => toggleSkill(skill.id)}
-                      className={cn(
-                        "rounded-full border px-3 py-1 text-sm",
-                        selected
-                          ? "border-primary bg-accent text-accent-foreground"
-                          : "border-border text-muted-foreground"
-                      )}
-                    >
-                      {skill.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ) : null}
-        </div>
-        {error ? <p className="text-sm text-destructive">{error}</p> : null}
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            disabled={mutation.isPending}
-            onClick={() => {
-              setError(null);
-              mutation.mutate(
-                {
-                  aboutId: profile.aboutId,
-                  aboutText: aboutText.trim(),
-                  topSkillIds,
-                },
-                {
-                  onSuccess: () => onOpenChange(false),
-                  onError: (err) => setError(mutationErrorMessage(err)),
-                }
+    <ProfileFormDialog
+      open={open}
+      onOpenChange={onOpenChange}
+      icon={FileText}
+      title="Edit about"
+      description="Your story in a few lines: experience, focus areas and what clients can expect."
+      error={error}
+      saving={mutation.isPending}
+      onSave={() => {
+        setError(null);
+        mutation.mutate(
+          {
+            aboutId: profile.aboutId,
+            aboutText: aboutText.trim(),
+            topSkillIds,
+          },
+          {
+            onSuccess: () => onOpenChange(false),
+            onError: (err) => setError(mutationErrorMessage(err)),
+          }
+        );
+      }}
+    >
+      <FormField label="Summary" htmlFor="about-text" hint={<CharCount value={aboutText} max={2600} />}>
+        <Textarea
+          id="about-text"
+          value={aboutText}
+          onChange={(e) => setAboutText(e.target.value)}
+          maxLength={2600}
+          className="min-h-48 leading-relaxed"
+          placeholder="e.g. Dubai-based broker with 8 years in off-plan and luxury secondary sales…"
+          autoFocus
+        />
+      </FormField>
+      {profile.skills.length > 0 ? (
+        <FormField
+          label="Top skills"
+          hint={`Pick up to 5 · ${topSkillIds.length}/5 selected`}
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {profile.skills.map((skill) => {
+              const selected = topSkillIds.includes(skill.id);
+              const disabled = !selected && topSkillIds.length >= 5;
+              return (
+                <button
+                  key={skill.id}
+                  type="button"
+                  aria-pressed={selected}
+                  disabled={disabled}
+                  onClick={() => toggleSkill(skill.id)}
+                  className={cn(
+                    "inline-flex h-8 items-center gap-1 rounded-full border px-3 text-[13px] font-medium transition-colors disabled:opacity-40",
+                    selected
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-foreground/80 hover:bg-muted"
+                  )}
+                >
+                  {selected ? <Check className="h-3.5 w-3.5" aria-hidden /> : null}
+                  {skill.name}
+                </button>
               );
-            }}
-          >
-            {mutation.isPending ? "Saving…" : "Save"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+            })}
+          </div>
+        </FormField>
+      ) : null}
+    </ProfileFormDialog>
   );
 }

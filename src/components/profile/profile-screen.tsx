@@ -211,9 +211,19 @@ export function ProfileScreen({
       {profile.isOwn ? <MeProfileLinksPanel /> : null}
 
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="about">About</TabsTrigger>
-          <TabsTrigger value="posts">Realtor&apos;s In</TabsTrigger>
+        <TabsList className="flex h-auto w-full justify-start gap-1 rounded-[var(--radius)] border border-border bg-card p-1.5 shadow-sm">
+          {[
+            { value: "about", label: "About" },
+            { value: "posts", label: `Posts${profile.postsCount ? ` · ${profile.postsCount}` : ""}` },
+          ].map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="h-9 flex-1 rounded-[calc(var(--radius)-4px)] text-sm font-semibold text-muted-foreground hover:text-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none sm:flex-none sm:px-6"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
         <TabsContent value="about" className="mt-3 space-y-3">
           <ProfileAboutPanel

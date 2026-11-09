@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Trash2, X } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, Pause, Play, Trash2, Volume2, VolumeX, X } from "lucide-react";
 import { RemoteImg } from "@/components/shared/remote-img";
 import { RemoteVideo } from "@/components/shared/remote-video";
 import { StoryViewerFooter } from "@/components/stories/story-viewer-footer";
@@ -18,6 +19,8 @@ import {
   useMarkStoryViewed,
 } from "@/features/stories/hooks/use-stories";
 import type { StoryUserGroup } from "@/features/stories/types/story.types";
+import { formatRelativeTime } from "@/lib/format-relative-time";
+import { showAppToast } from "@/lib/toast/app-toast";
 import { cn } from "@/lib/utils";
 
 function initials(name: string) {
@@ -58,6 +61,10 @@ export function StoryViewer({
   const [paused, setPaused] = useState(false);
   const [mediaLoading, setMediaLoading] = useState(true);
   const [viewersOpen, setViewersOpen] = useState(false);
+  // Browsers block autoplay with sound — start muted, let the viewer unmute.
+  const [muted, setMuted] = useState(true);
+  const holdTimerRef = useRef<number | null>(null);
+  const heldRef = useRef(false);
   const [userSlideDir, setUserSlideDir] = useState<1 | -1 | null>(null);
   const [userSliding, setUserSliding] = useState(false);
   const viewedRef = useRef<Set<number>>(new Set());
@@ -119,9 +126,14 @@ export function StoryViewer({
     }
   }, [ordered]);
 
+  const orderedRef = useRef(ordered);
+  orderedRef.current = ordered;
+
+  // Reset only when the viewer opens (not when the list refreshes mid-view —
+  // that used to jump back to the first story).
   useEffect(() => {
     if (!open) return;
-    const idx = ordered.findIndex((item) => item.userId === startUserId);
+    const idx = orderedRef.current.findIndex((item) => item.userId === startUserId);
     setUserIndex(idx >= 0 ? idx : 0);
     setStoryIndex(0);
     setProgress(0);
@@ -131,7 +143,7 @@ export function StoryViewer({
     setUserSlideDir(null);
     setUserSliding(false);
     viewedRef.current = new Set();
-  }, [open, startUserId, ordered]);
+  }, [open, startUserId]);
 
   const playbackBlocked =
     paused || mediaLoading || userSliding || viewersOpen;
@@ -210,6 +222,10 @@ export function StoryViewer({
       if (event.key === "Escape") onClose();
       if (event.key === "ArrowRight") goNextRef.current();
       if (event.key === "ArrowLeft") goPrev();
+      if (event.key === " " && !(event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement)) {
+        event.preventDefault();
+        setPaused((p) => !p);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -233,6 +249,24 @@ export function StoryViewer({
       aria-modal="true"
       aria-label="Story viewer"
     >
+      {userIndex > 0 || storyIndex > 0 ? (
+        <button
+          type="button"
+          onClick={goPrev}
+          className="absolute left-[calc(50%-17rem)] top-1/2 z-[101] hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25 sm:flex"
+          aria-label="Previous"
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </button>
+      ) : null}
+      <button
+        type="button"
+        onClick={() => goNextRef.current()}
+        className="absolute right-[calc(50%-17rem)] top-1/2 z-[101] hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur transition hover:bg-white/25 sm:flex"
+        aria-label="Next"
+      >
+        <ChevronRight className="h-6 w-6" />
+      </button>
       <div className="relative flex h-full w-full max-w-md flex-col overflow-hidden sm:h-[min(90vh,820px)] sm:rounded-2xl">
         <div
           key={group.userId}
@@ -276,11 +310,40 @@ export function StoryViewer({
                 ) : null}
                 <AvatarPlaceholderFallback />
               </Avatar>
-              <div className="min-w-0 flex-1">
+              <Link
+                href={group.isOwn ? "/me" : group.userName ? `/u/${group.userName}` : `/profile/${group.userId}`}
+                onClick={onClose}
+                className="min-w-0 flex-1 hover:underline"
+              >
                 <p className="truncate text-sm font-semibold text-white">
-                  {group.name}
+                  {group.isOwn ? "Your story" : group.name}
+                  {story.createdAt ? (
+                    <span className="ms-2 text-xs font-normal text-white/70">{formatRelativeTime(story.createdAt)}</span>
+                  ) : null}
                 </p>
-              </div>
+              </Link>
+              <Button
+                type="button"
+                size="icon"
+                variant="ghost"
+                className="h-9 w-9 text-white hover:bg-white/15"
+                aria-label={paused ? "Play story" : "Pause story"}
+                onClick={() => setPaused((p) => !p)}
+              >
+                {paused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
+              </Button>
+              {story.mediaType === "video" ? (
+                <Button
+                  type="button"
+                  size="icon"
+                  variant="ghost"
+                  className="h-9 w-9 text-white hover:bg-white/15"
+                  aria-label={muted ? "Unmute" : "Mute"}
+                  onClick={() => setMuted((m) => !m)}
+                >
+                  {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
+                </Button>
+              ) : null}
               {story.isOwn ? (
                 <Button
                   type="button"
@@ -303,7 +366,7 @@ export function StoryViewer({
                           else goNextRef.current();
                         },
                         onError: (err) =>
-                          window.alert(storiesErrorMessage(err)),
+                          showAppToast.error("Couldn't delete story", storiesErrorMessage(err)),
                       });
                     })();
                   }}
@@ -325,18 +388,52 @@ export function StoryViewer({
           </div>
 
           <div className="relative flex min-h-0 flex-1 items-center justify-center bg-black">
-            <button
-              type="button"
-              className="absolute inset-y-0 left-0 z-10 w-1/3 cursor-pointer"
-              aria-label="Previous story"
-              onClick={goPrev}
-            />
-            <button
-              type="button"
-              className="absolute inset-y-0 right-0 z-10 w-1/3 cursor-pointer"
-              aria-label="Next story"
-              onClick={() => goNextRef.current()}
-            />
+            <div
+              className="absolute inset-0 z-10 flex"
+              onPointerDown={() => {
+                heldRef.current = false;
+                holdTimerRef.current = window.setTimeout(() => {
+                  heldRef.current = true;
+                  setPaused(true);
+                }, 220);
+              }}
+              onPointerUp={() => {
+                if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
+                if (heldRef.current) setPaused(false);
+              }}
+              onPointerLeave={() => {
+                if (holdTimerRef.current) window.clearTimeout(holdTimerRef.current);
+                if (heldRef.current) {
+                  heldRef.current = false;
+                  setPaused(false);
+                }
+              }}
+            >
+              <button
+                type="button"
+                className="h-full w-1/3 cursor-pointer"
+                aria-label="Previous story"
+                onClick={() => {
+                  if (!heldRef.current) goPrev();
+                  heldRef.current = false;
+                }}
+              />
+              <span className="h-full w-1/3" aria-hidden />
+              <button
+                type="button"
+                className="h-full w-1/3 cursor-pointer"
+                aria-label="Next story"
+                onClick={() => {
+                  if (!heldRef.current) goNextRef.current();
+                  heldRef.current = false;
+                }}
+              />
+            </div>
+            {paused && !viewersOpen ? (
+              <span className="pointer-events-none absolute z-20 flex h-14 w-14 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur" aria-hidden>
+                <Pause className="h-6 w-6" />
+              </span>
+            ) : null}
 
             <div
               key={story.id}
@@ -351,7 +448,7 @@ export function StoryViewer({
                   className="max-h-full max-w-full object-contain"
                   autoPlay
                   playsInline
-                  muted={false}
+                  muted={muted}
                   preload="auto"
                   onCanPlay={() => setMediaLoading(false)}
                   onLoadedData={() => setMediaLoading(false)}

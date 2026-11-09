@@ -1,7 +1,9 @@
 import { previewFromLastMessageRaw } from "@/features/chat/lib/message-list-preview";
 import { getStoryPreviewImageUri } from "@/features/stories/lib/resolve-story-media-uri";
 import type {
+  BlockedChatUser,
   ChatMessage,
+  ChatMessageReaction,
   ChatSharedEvent,
   ChatSharedJob,
   ChatSharedPost,
@@ -294,6 +296,25 @@ export function resolveIsOwn(input: {
   return input.senderId === input.currentUserId;
 }
 
+export function mapMessageReactions(raw: unknown): ChatMessageReaction[] {
+  if (!Array.isArray(raw)) return [];
+  const byEmoji = new Map<string, number[]>();
+  for (const item of raw) {
+    const row = asRecord(item);
+    const emoji = asString(row?.emoji);
+    const userId = asNumber(row?.fk_user_id ?? row?.user_id);
+    if (!emoji) continue;
+    const users = byEmoji.get(emoji) ?? [];
+    if (userId != null) users.push(userId);
+    byEmoji.set(emoji, users);
+  }
+  return Array.from(byEmoji, ([emoji, userIds]) => ({
+    emoji,
+    count: userIds.length || 1,
+    userIds,
+  }));
+}
+
 export function mapMessage(
   raw: unknown,
   currentUserId: number | null,
@@ -332,6 +353,9 @@ export function mapMessage(
     sharedEvent: mapSharedEvent(row.sharedEvent ?? row.shared_event),
     sharedProfile: mapSharedProfile(row.sharedProfile ?? row.shared_profile),
     sharedStory: mapSharedStory(row.sharedStory ?? row.shared_story),
+    isEdited: asBool(row.is_edited),
+    isDeleted: asBool(row.deleted_for_everyone),
+    reactions: mapMessageReactions(row.reactions),
   };
 }
 
@@ -355,4 +379,26 @@ export function mapMessagesPage(
     total: asNumber(pagination?.total, 0) ?? 0,
     hasMore: asBool(pagination?.has_more),
   };
+}
+
+export function mapBlockedUsers(payload: unknown): BlockedChatUser[] {
+  const data = asRecord(asRecord(payload)?.data);
+  const list = Array.isArray(data?.blocked_users) ? data.blocked_users : [];
+  return list
+    .map((raw): BlockedChatUser | null => {
+      const row = asRecord(raw);
+      const userId = asNumber(row?.user_id ?? row?.id);
+      if (!row || userId == null) return null;
+      const name =
+        `${asString(row.first_name) ?? ""} ${asString(row.last_name) ?? ""}`.trim() ||
+        asString(row.name) ||
+        "Member";
+      return {
+        userId,
+        name,
+        avatarUrl: asString(row.profile_image) ?? asString(row.profile_pic),
+        blockedAt: asString(row.blocked_at) ?? asString(row.created_at),
+      };
+    })
+    .filter((u): u is BlockedChatUser => u != null);
 }

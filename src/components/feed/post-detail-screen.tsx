@@ -1,5 +1,6 @@
 "use client";
 
+import { useTrackPostDetailView } from "@/features/feed/hooks/use-track-post-view";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -47,6 +48,7 @@ export function PostDetailScreen({
   viewerAvatarUrl?: string | null;
 }) {
   const router = useRouter();
+  useTrackPostDetailView(postId);
   const [reportOpen, setReportOpen] = useState(false);
   const [commentsOpen, setCommentsOpen] = useState(false);
   const [repostOpen, setRepostOpen] = useState(false);

@@ -9,7 +9,14 @@ import { useSignOutConfirmOptions } from "@/features/auth/hooks/use-sign-out-con
 import { cn } from "@/lib/utils";
 import { useTranslation } from "react-i18next";
 
-export function ShellSignOutButton({ className }: { className?: string }) {
+export function ShellSignOutButton({
+  className,
+  variant = "card",
+}: {
+  className?: string;
+  /** "row" sits inside the left-rail nav card. */
+  variant?: "card" | "row";
+}) {
   const { t } = useTranslation();
   const router = useRouter();
   const { confirm } = useConfirm();
@@ -35,11 +42,21 @@ export function ShellSignOutButton({ className }: { className?: string }) {
       disabled={pending}
       onClick={() => void onSignOut()}
       className={cn(
-        "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-60",
+        variant === "row"
+          ? "group flex h-10 w-full items-center gap-3 rounded-lg px-3 text-sm font-medium text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:opacity-60"
+          : "flex w-full items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-60",
         className
       )}
     >
-      <LogOut className="h-4 w-4 shrink-0 text-muted-foreground" aria-hidden />
+      <LogOut
+        className={cn(
+          "shrink-0",
+          variant === "row"
+            ? "h-[18px] w-[18px] text-muted-foreground group-hover:text-destructive"
+            : "h-4 w-4 text-muted-foreground"
+        )}
+        aria-hidden
+      />
       <span className="locale-text flex-1 text-start">
         {pending ? t("Loading...") : t("Logout")}
       </span>

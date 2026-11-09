@@ -14,16 +14,29 @@ import {
 } from "@/components/ui/avatar";
 import { ProfileHandle } from "@/components/shared/profile-handle";
 import type { FeedPost } from "@/features/feed/types/post.types";
+import { Skeleton } from "@/components/ui/skeleton";
+import { usePostDetail } from "@/features/feed/hooks/use-post-detail";
 import { cn } from "@/lib/utils";
 
 /** Nested original post inside a repost-with-thoughts card (mobile `PostContainer`). */
 export function PostQuotedEmbed({
-  post,
+  post: snapshot,
   className,
 }: {
   post: FeedPost;
   className?: string;
 }) {
+  // `repost_data` is a snapshot saved at repost time; older snapshots of
+  // property / project shares carry no description, media or share payload,
+  // which rendered as an empty author-only box. Load the original post then.
+  const snapshotEmpty =
+    !snapshot.description.trim() &&
+    !activityPostHasVisualEmbed(snapshot) &&
+    snapshot.videos.length === 0;
+  const original = usePostDetail(snapshot.id, snapshotEmpty);
+  const post = snapshotEmpty && original.data ? original.data : snapshot;
+  const loadingOriginal = snapshotEmpty && original.isLoading;
+  const originalGone = snapshotEmpty && original.isError;
   const profileHref = post.userName ? `/u/${post.userName}` : null;
   const postHref = `/posts/${post.id}`;
 
@@ -75,6 +88,19 @@ export function PostQuotedEmbed({
 
       {activityPostHasVisualEmbed(post) ? (
         <ActivityPostEmbeds post={post} className="mt-2.5" />
+      ) : null}
+
+      {loadingOriginal ? (
+        <div className="mt-2.5 space-y-2" aria-busy="true">
+          <Skeleton className="h-3 w-3/4" />
+          <Skeleton className="h-20 w-full rounded-lg" />
+        </div>
+      ) : null}
+
+      {originalGone ? (
+        <p className="mt-2 text-sm italic text-muted-foreground">
+          This post is no longer available.
+        </p>
       ) : null}
     </Link>
   );

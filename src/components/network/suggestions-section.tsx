@@ -8,7 +8,7 @@ import type { NetworkPerson } from "@/features/network/types/network.types";
 const SUGGESTION_GRID = "grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3";
 
 export function SuggestionsSection({
-  title = "People You May Know",
+  title = "People you may know",
   suggestions,
   loading,
   maxItems = 3,

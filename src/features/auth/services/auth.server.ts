@@ -11,6 +11,7 @@ import {
   setSessionCookie,
 } from "@/lib/auth/session";
 import { getSafeNextPath } from "@/lib/auth/safe-redirect";
+import { decodeJwtPayload } from "@/features/auth/lib/decode-jwt-payload";
 import {
   backendMessage,
   extractNodeToken,
@@ -247,40 +248,53 @@ export async function getValidatedSession(): Promise<SessionView> {
     };
   }
 
-  try {
-    const payload = await socialApiRequest<CheckResponse>({
+  const signedOut = async (): Promise<SessionView> => {
+    await clearSessionCookie().catch(() => undefined);
+    await clearOffplanSessionCookie().catch(() => undefined);
+    return { authenticated: false, hasSessionCookie: false, member: null };
+  };
+
+  const check = () =>
+    socialApiRequest<CheckResponse>({
       path: "/api/social_profile/check",
       method: "GET",
       auth: true,
     });
 
-    if (!isBackendSuccess(payload) || !payload.data) {
-      await clearSessionCookie().catch(() => undefined);
-      await clearOffplanSessionCookie().catch(() => undefined);
-      return {
-        authenticated: false,
-        hasSessionCookie: false,
-        member: null,
-      };
+  let payload: CheckResponse;
+  try {
+    payload = await check();
+  } catch (error) {
+    // Only a real auth rejection ends the session. A timeout / 5xx / network
+    // blip used to clear the cookie too, silently signing members out.
+    if (isAuthRejection(error)) return signedOut();
+    try {
+      payload = await check();
+    } catch (retryError) {
+      if (isAuthRejection(retryError)) return signedOut();
+      throw retryError; // surfaced by the route error boundary ("Try again")
     }
-
-    const member = mapToPublicMember(payload.data);
-    return {
-      authenticated: true,
-      hasSessionCookie: true,
-      member,
-    };
-  } catch {
-    // Drop cookie on any failed validation so stale tokens cannot strand
-    // the browser between protected routes and login.
-    await clearSessionCookie().catch(() => undefined);
-    await clearOffplanSessionCookie().catch(() => undefined);
-    return {
-      authenticated: false,
-      hasSessionCookie: false,
-      member: null,
-    };
   }
+
+  if (!isBackendSuccess(payload) || !payload.data) {
+    return signedOut();
+  }
+
+  return {
+    authenticated: true,
+    hasSessionCookie: true,
+    member: mapToPublicMember(payload.data),
+  };
+}
+
+function isAuthRejection(error: unknown): boolean {
+  return (
+    error instanceof ApiError &&
+    (error.status === 401 ||
+      error.status === 403 ||
+      error.code === "UNAUTHORIZED" ||
+      error.code === "SESSION_EXPIRED")
+  );
 }
 
 export async function logoutMember(): Promise<void> {
@@ -368,5 +382,90 @@ export async function completeMemberProfile(
     };
   } catch (error) {
     return failFromError(error, "Could not save profile");
+  }
+}
+
+export type SocialSignInInput =
+  | { provider: "google"; credential: string }
+  | { provider: "facebook"; accessToken: string };
+
+function str(value: unknown): string | undefined {
+  return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+async function buildSocialLoginBody(
+  input: SocialSignInInput
+): Promise<Record<string, unknown> | AuthActionFailure> {
+  if (input.provider === "google") {
+    const claims = decodeJwtPayload(input.credential);
+    const id = str(claims?.sub);
+    const email = str(claims?.email);
+    if (!id || !email) {
+      return { ok: false, message: "Google did not return an email address" };
+    }
+    return {
+      id,
+      email,
+      first_name: str(claims?.given_name),
+      last_name: str(claims?.family_name),
+      profile_image: str(claims?.picture),
+      idToken: input.credential,
+    };
+  }
+
+  if (input.provider === "facebook") {
+    const res = await fetch(
+      `https://graph.facebook.com/me?fields=id,email,first_name,last_name,name&access_token=${encodeURIComponent(input.accessToken)}`,
+      { cache: "no-store" }
+    );
+    const me = (await res.json().catch(() => null)) as Record<string, unknown> | null;
+    const id = str(me?.id);
+    const email = str(me?.email);
+    if (!res.ok || !id) {
+      return { ok: false, message: "Facebook sign-in failed" };
+    }
+    if (!email) {
+      return {
+        ok: false,
+        message: "Your Facebook account has no email address. Use email sign-in instead.",
+      };
+    }
+    return {
+      id,
+      email,
+      first_name: str(me?.first_name),
+      last_name: str(me?.last_name),
+      name: str(me?.name),
+      accessToken: input.accessToken,
+    };
+  }
+
+  return { ok: false, message: "Unsupported sign-in provider" };
+}
+
+/** Same backend endpoints as mobile: POST /api/login/{google|facebook}. */
+export async function loginWithSocialProvider(
+  input: SocialSignInInput,
+  next?: string | null
+): Promise<AuthActionResult | AuthActionFailure> {
+  try {
+    const body = await buildSocialLoginBody(input);
+    if ("ok" in body && body.ok === false) return body as AuthActionFailure;
+
+    const payload = await socialApiPublicRequest<LoginResponse>({
+      path: `/api/login/${input.provider}`,
+      method: "POST",
+      data: body,
+    });
+    if (!isBackendSuccess(payload) || !payload.user) {
+      return {
+        ok: false,
+        message: backendMessage(payload, "Sign-in failed"),
+        code: "LOGIN_FAILED",
+      };
+    }
+    return establishSessionFromUser(payload.user, next);
+  } catch (error) {
+    return failFromError(error, "Unable to sign in");
   }
 }

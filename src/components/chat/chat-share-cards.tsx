@@ -35,13 +35,20 @@ function ShareLabel({ label }: { label: string }) {
   );
 }
 
-function UnavailableCard() {
+const UNAVAILABLE_COPY = {
+  post: ["Post unavailable", "This post was deleted or its visibility changed."],
+  job: ["Job no longer available", "The job was removed or closed by the poster."],
+  event: ["Event unavailable", "This event was deleted or is private."],
+  profile: ["Profile unavailable", "This member’s profile can’t be viewed."],
+  story: ["Story unavailable", "This story has expired or was deleted."],
+} as const;
+
+function UnavailableCard({ kind }: { kind: keyof typeof UNAVAILABLE_COPY }) {
+  const [title, body] = UNAVAILABLE_COPY[kind];
   return (
-    <div className="rounded-xl border border-border bg-muted/40 px-3 py-3 text-xs text-muted-foreground">
-      <p className="font-semibold text-foreground">Content unavailable</p>
-      <p className="mt-0.5">
-        The original item was deleted or is no longer accessible.
-      </p>
+    <div className="rounded-xl border border-dashed border-border bg-muted/40 px-3 py-3 text-xs text-muted-foreground">
+      <p className="font-semibold text-foreground">{title}</p>
+      <p className="mt-0.5">{body}</p>
     </div>
   );
 }
@@ -70,7 +77,7 @@ export function SharedPostCard({
     <div>
       <ShareLabel label={shareLabel} />
       {!post ? (
-        <UnavailableCard />
+        <UnavailableCard kind="post" />
       ) : richProjectShare ? (
         <div className="locale-text w-full min-w-0">
           {post.description ? (
@@ -155,7 +162,7 @@ export function SharedJobCard({ job }: { job: ChatSharedJob | null }) {
     <div>
       <ShareLabel label="Shared a job" />
       {!job ? (
-        <UnavailableCard />
+        <UnavailableCard kind="job" />
       ) : (
         <Link href={`/jobs/${job.id}`} className={cn(cardShell, "block px-3 py-3")}>
           <div className="flex items-start gap-2.5">
@@ -191,7 +198,7 @@ export function SharedEventCard({ event }: { event: ChatSharedEvent | null }) {
     <div className="w-full min-w-0">
       <ShareLabel label="Shared an event" />
       {!event ? (
-        <UnavailableCard />
+        <UnavailableCard kind="event" />
       ) : (
         <>
           <button
@@ -259,7 +266,7 @@ export function SharedProfileCard({
     <div>
       <ShareLabel label="Shared a profile" />
       {!profile || !href ? (
-        <UnavailableCard />
+        <UnavailableCard kind="profile" />
       ) : (
         <Link href={href} className={cn(cardShell, "flex items-center gap-3 px-3 py-3")}>
           <Avatar className="h-12 w-12">
@@ -306,7 +313,7 @@ export function SharedStoryCard({ story }: { story: ChatSharedStory | null }) {
     <div>
       <ShareLabel label="Replied to a story" />
       {!story || story.isExpired ? (
-        <UnavailableCard />
+        <UnavailableCard kind="story" />
       ) : (
         <div className={cardShell}>
           {showThumb ? (

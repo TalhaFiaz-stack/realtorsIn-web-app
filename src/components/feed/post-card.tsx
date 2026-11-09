@@ -4,7 +4,9 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 import {
   Bookmark,
+  ExternalLink,
   EyeOff,
+  Link2,
   Flag,
   MoreHorizontal,
   Pin,
@@ -55,7 +57,18 @@ import type { FeedPost } from "@/features/feed/types/post.types";
 import { PostQuotedEmbed } from "@/components/feed/post-quoted-embed";
 import { PostRepostBanner } from "@/components/feed/post-repost-banner";
 import { CONFIRM_DELETE_POST } from "@/constants/confirm-copy";
+import { copyTextToClipboard } from "@/lib/clipboard";
+import { showAppToast } from "@/lib/toast/app-toast";
 import { cn } from "@/lib/utils";
+
+async function copyPostLink(postId: number) {
+  const url = `${window.location.origin}/posts/${postId}`;
+  if (await copyTextToClipboard(url)) {
+    showAppToast.success("Link copied", "Anyone signed in to RealtorsIn can open it.");
+  } else {
+    showAppToast.error("Couldn't copy link", url);
+  }
+}
 
 export function PostCard({
   post,
@@ -108,7 +121,13 @@ export function PostCard({
     if (!commentsExpanded || !cardRef.current) return;
     cardRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }, [commentsExpanded]);
-  const profileHref = post.userName ? `/u/${post.userName}` : "/me";
+  const profileHref = post.userName
+    ? `/u/${post.userName}`
+    : post.isOwn
+      ? "/me"
+      : post.userId
+        ? `/profile/${post.userId}`
+        : `/posts/${post.id}`;
   const summaryTypes = getSummaryReactionTypes({
     reactionSummary: post.reactionSummary,
     likeStatus: post.isLiked,
@@ -122,7 +141,7 @@ export function PostCard({
   });
   const showPostLikeSummary = Boolean(likeSummary);
   const hasEngagement =
-    showPostLikeSummary || post.commentCount > 0;
+    showPostLikeSummary || post.commentCount > 0 || post.repostCount > 0;
   const hasPropertyBlock = post.isPropertyShare;
   const hasProjectBlock = Boolean(post.projectData) || post.isProjectShare;
   const hideRegularMedia = Boolean(post.propertyData);
@@ -149,10 +168,11 @@ export function PostCard({
       ) : null}
 
       {connectionRepost && connectionRepostThoughts ? (
-        <div className="px-4 pb-1 pt-1">
+        <div className="border-b border-border/60 pb-3">
           <PostDescription
             description={connectionRepostThoughts}
             mentions={[]}
+            className="pt-1"
           />
         </div>
       ) : null}
@@ -226,54 +246,46 @@ export function PostCard({
               <MoreHorizontal className="h-5 w-5" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            <DropdownMenuItem
-              disabled={saving}
-              onClick={() => onSave(post.id)}
-            >
-              <Bookmark
-                className={cn("mr-2 h-4 w-4", post.isSaved && "fill-current")}
-              />
-              {post.isSaved ? "Saved" : "Save"}
+          <DropdownMenuContent align="end" className="w-56">
+            <DropdownMenuItem disabled={saving} onClick={() => onSave(post.id)}>
+              <Bookmark className={cn("mr-2 h-4 w-4", post.isSaved && "fill-current")} />
+              {post.isSaved ? "Unsave" : "Save"}
             </DropdownMenuItem>
+            {post.isOwn && onPin ? (
+              <DropdownMenuItem onClick={() => onPin({ postId: post.id, pinned: !post.isPinned })}>
+                {post.isPinned ? <PinOff className="mr-2 h-4 w-4" /> : <Pin className="mr-2 h-4 w-4" />}
+                {post.isPinned ? "Unpin from profile" : "Pin to profile"}
+              </DropdownMenuItem>
+            ) : null}
+            <DropdownMenuItem onSelect={() => void copyPostLink(post.id)}>
+              <Link2 className="mr-2 h-4 w-4" />
+              Copy link to post
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href={`/posts/${post.id}`}>
+                <ExternalLink className="mr-2 h-4 w-4" />
+                Open post
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             {post.isOwn ? (
-              <>
-                {onPin ? (
-                  <DropdownMenuItem
-                    onClick={() =>
-                      onPin({ postId: post.id, pinned: !post.isPinned })
-                    }
-                  >
-                    {post.isPinned ? (
-                      <PinOff className="mr-2 h-4 w-4" />
-                    ) : (
-                      <Pin className="mr-2 h-4 w-4" />
-                    )}
-                    {post.isPinned ? "Unpin from profile" : "Pin to profile"}
-                  </DropdownMenuItem>
-                ) : null}
-                {onDelete ? (
-                  <DropdownMenuItem
-                    className="text-destructive focus:text-destructive"
-                    onSelect={(event) => {
-                      event.preventDefault();
-                      void (async () => {
-                        const preview =
-                          post.description.trim().slice(0, 160) ||
-                          `Post by ${post.authorName}`;
-                        const ok = await confirm({
-                          ...CONFIRM_DELETE_POST,
-                          detail: preview,
-                        });
-                        if (ok) onDelete(post.id);
-                      })();
-                    }}
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete post
-                  </DropdownMenuItem>
-                ) : null}
-              </>
+              onDelete ? (
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onSelect={(event) => {
+                    event.preventDefault();
+                    void (async () => {
+                      const preview =
+                        post.description.trim().slice(0, 160) || `Post by ${post.authorName}`;
+                      const ok = await confirm({ ...CONFIRM_DELETE_POST, detail: preview });
+                      if (ok) onDelete(post.id);
+                    })();
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete post
+                </DropdownMenuItem>
+              ) : null
             ) : (
               <>
                 <DropdownMenuItem onClick={() => onHide?.(post.id)}>
@@ -284,16 +296,15 @@ export function PostCard({
                   <ThumbsDown className="mr-2 h-4 w-4" />
                   Not interested
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onReport(post.id)}>
+                <DropdownMenuItem
+                  className="text-destructive focus:text-destructive"
+                  onClick={() => onReport(post.id)}
+                >
                   <Flag className="mr-2 h-4 w-4" />
-                  Report
+                  Report post
                 </DropdownMenuItem>
               </>
             )}
-            <DropdownMenuItem asChild>
-              <Link href={`/posts/${post.id}`}>Open post</Link>
-            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </header>
@@ -376,28 +387,29 @@ export function PostCard({
               )
             ) : null}
           </div>
-          {post.commentCount > 0 ? (
-            onComment ? (
-              <button
-                type="button"
-                className="shrink-0 tabular-nums hover:underline"
-                onClick={handleCommentToggle}
-              >
-                {post.commentCount} comment
-                {post.commentCount === 1 ? "" : "s"}
-              </button>
-            ) : (
-              <Link
-                href={`/posts/${post.id}`}
-                className="shrink-0 tabular-nums hover:underline"
-              >
-                {post.commentCount} comment
-                {post.commentCount === 1 ? "" : "s"}
-              </Link>
-            )
-          ) : (
-            <span />
-          )}
+          <div className="flex shrink-0 items-center gap-1.5 tabular-nums">
+            {post.commentCount > 0 ? (
+              onComment ? (
+                <button
+                  type="button"
+                  className="hover:text-primary hover:underline"
+                  onClick={handleCommentToggle}
+                >
+                  {post.commentCount} comment{post.commentCount === 1 ? "" : "s"}
+                </button>
+              ) : (
+                <Link href={`/posts/${post.id}`} className="hover:text-primary hover:underline">
+                  {post.commentCount} comment{post.commentCount === 1 ? "" : "s"}
+                </Link>
+              )
+            ) : null}
+            {post.commentCount > 0 && post.repostCount > 0 ? <span aria-hidden>·</span> : null}
+            {post.repostCount > 0 ? (
+              <span>
+                {post.repostCount} repost{post.repostCount === 1 ? "" : "s"}
+              </span>
+            ) : null}
+          </div>
         </div>
       ) : (
         <div className="h-2" aria-hidden />

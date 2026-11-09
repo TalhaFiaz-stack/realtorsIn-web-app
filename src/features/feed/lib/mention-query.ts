@@ -60,3 +60,30 @@ export function filterMentionCandidates(
     })
     .slice(0, 8);
 }
+
+/**
+ * Non-overlapping ranges of selected mention labels in `text` (longest label
+ * wins when names overlap, e.g. "Ali" vs "Ali Khan"). Used to highlight
+ * mentions in the composer and to delete a mention as one unit.
+ */
+export function findMentionRanges(
+  text: string,
+  labels: string[]
+): Array<{ start: number; end: number; label: string }> {
+  const sorted = [...new Set(labels.filter((l) => l.trim().length > 0))].sort(
+    (a, b) => b.length - a.length
+  );
+  const taken: Array<{ start: number; end: number; label: string }> = [];
+  for (const label of sorted) {
+    let from = 0;
+    while (from <= text.length) {
+      const idx = text.indexOf(label, from);
+      if (idx === -1) break;
+      const end = idx + label.length;
+      const overlaps = taken.some((r) => idx < r.end && end > r.start);
+      if (!overlaps) taken.push({ start: idx, end, label });
+      from = end;
+    }
+  }
+  return taken.sort((a, b) => a.start - b.start);
+}

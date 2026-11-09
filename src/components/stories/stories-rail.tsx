@@ -28,10 +28,11 @@ export function StoriesRail() {
     [groups]
   );
   const own = groups.find((group) => group.isOwn) ?? null;
-  const hasOwnStory = Boolean(own?.stories?.length);
-  const showPromo = !feedQuery.isLoading && !hasOwnStory;
   const showRail =
     feedQuery.isLoading || Boolean(own) || others.length > 0;
+  // The rail already starts with a "Create story" bubble — only show the big
+  // promo card when there are no stories at all (rail hidden).
+  const showPromo = !feedQuery.isLoading && !showRail;
 
   return (
     <>
@@ -43,7 +44,7 @@ export function StoriesRail() {
           )}
         >
           {showPromo ? (
-            <FeedCreateStoryCard href="/stories/create" />
+            <FeedCreateStoryCard onCreate={() => setCreateOpen(true)} />
           ) : null}
 
           {feedQuery.isLoading ? (
@@ -75,6 +76,7 @@ export function StoriesRail() {
                   name="Your story"
                   avatarUrl={own.avatarUrl}
                   hasUnseen={own.hasUnseen}
+                  stories={own.stories}
                   onClick={() => setViewerUserId(own.userId)}
                 />
               ) : null}
@@ -84,6 +86,7 @@ export function StoriesRail() {
                   name={group.name}
                   avatarUrl={group.avatarUrl}
                   hasUnseen={group.hasUnseen}
+                  stories={group.stories}
                   onClick={() => setViewerUserId(group.userId)}
                 />
               ))}

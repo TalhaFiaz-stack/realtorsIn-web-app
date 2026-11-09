@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Check, Plus, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ProfileSkill } from "@/features/profile/types/profile.types";
+import { cn } from "@/lib/utils";
 
+/** Pick existing skills as toggle chips, or type new ones (comma separated). */
 export function ProfileSectionSkillsField({
   label = "Skills",
   skills,
@@ -43,46 +45,81 @@ export function ProfileSectionSkillsField({
       .filter((part) => part.length >= 2);
     if (parts.length === 0) return;
     const merged = [...newSkillNames];
+    const nextSelected = [...selectedSkillIds];
     for (const part of parts) {
-      const exists =
-        merged.some((n) => n.toLowerCase() === part.toLowerCase()) ||
-        sortedSkills.some((s) => s.name.toLowerCase() === part.toLowerCase());
-      if (!exists) merged.push(part);
+      const existing = sortedSkills.find((s) => s.name.toLowerCase() === part.toLowerCase());
+      if (existing) {
+        if (!nextSelected.includes(existing.id)) nextSelected.push(existing.id);
+        continue;
+      }
+      if (!merged.some((n) => n.toLowerCase() === part.toLowerCase())) merged.push(part);
     }
     onNewSkillNamesChange(merged);
+    if (nextSelected.length !== selectedSkillIds.length) onSelectedSkillIdsChange(nextSelected);
     setNewSkillsText("");
   }
 
+  const count = selectedSkillIds.length + newSkillNames.length;
+
   return (
     <div className="space-y-2">
-      <Label>{label}</Label>
-      {sortedSkills.length > 0 ? (
-        <div className="max-h-36 space-y-2 overflow-y-auto rounded-lg border border-border p-3">
-          {sortedSkills.map((skill) => (
-            <label
-              key={skill.id}
-              className="flex cursor-pointer items-center gap-2 text-sm"
+      <div className="flex items-baseline justify-between gap-2">
+        <Label className="text-[13px] font-medium">{label}</Label>
+        {count > 0 ? (
+          <span className="text-xs text-muted-foreground">{count} selected</span>
+        ) : null}
+      </div>
+
+      {sortedSkills.length > 0 || newSkillNames.length > 0 ? (
+        <div className="flex max-h-40 flex-wrap gap-1.5 overflow-y-auto">
+          {sortedSkills.map((skill) => {
+            const active = selectedSkillIds.includes(skill.id);
+            return (
+              <button
+                key={skill.id}
+                type="button"
+                aria-pressed={active}
+                onClick={() => toggleSkill(skill.id)}
+                className={cn(
+                  "inline-flex h-8 items-center gap-1 rounded-full border px-3 text-[13px] font-medium transition-colors",
+                  active
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border text-foreground/80 hover:bg-muted"
+                )}
+              >
+                {active ? <Check className="h-3.5 w-3.5" aria-hidden /> : null}
+                {skill.name}
+              </button>
+            );
+          })}
+          {newSkillNames.map((name) => (
+            <span
+              key={name}
+              className="inline-flex h-8 items-center gap-1 rounded-full border border-primary bg-primary/10 pe-1.5 ps-3 text-[13px] font-medium text-primary"
             >
-              <Checkbox
-                checked={selectedSkillIds.includes(skill.id)}
-                onCheckedChange={() => toggleSkill(skill.id)}
-              />
-              <span>{skill.name}</span>
-            </label>
+              {name}
+              <span className="rounded bg-primary/15 px-1 text-[10px] uppercase">new</span>
+              <button
+                type="button"
+                className="inline-flex h-5 w-5 items-center justify-center rounded-full hover:bg-primary/20"
+                aria-label={`Remove ${name}`}
+                onClick={() => onNewSkillNamesChange(newSkillNames.filter((item) => item !== name))}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
           ))}
         </div>
-      ) : (
-        <p className="text-xs text-muted-foreground">
-          No skills on your profile yet. Add new skill names below.
-        </p>
-      )}
-      <div className="flex gap-2">
+      ) : null}
+
+      <div className="relative">
         <Input
           value={newSkillsText}
           onChange={(e) => setNewSkillsText(e.target.value)}
-          placeholder="New skills (comma-separated)"
+          placeholder={sortedSkills.length ? "Add another skill, e.g. Negotiation" : "Add skills, e.g. Negotiation, Leasing"}
+          className="pe-20"
           onKeyDown={(e) => {
-            if (e.key === "Enter") {
+            if (e.key === "Enter" || e.key === ",") {
               e.preventDefault();
               commitNewSkills();
             }
@@ -90,36 +127,14 @@ export function ProfileSectionSkillsField({
         />
         <button
           type="button"
-          className="shrink-0 rounded-lg border border-border px-3 text-sm font-medium hover:bg-muted"
+          disabled={newSkillsText.trim().length < 2}
+          className="absolute end-1.5 top-1/2 inline-flex h-7 -translate-y-1/2 items-center gap-1 rounded-full bg-muted px-2.5 text-xs font-semibold text-foreground hover:bg-muted/70 disabled:opacity-40"
           onClick={commitNewSkills}
         >
+          <Plus className="h-3.5 w-3.5" aria-hidden />
           Add
         </button>
       </div>
-      {newSkillNames.length > 0 ? (
-        <div className="flex flex-wrap gap-1.5">
-          {newSkillNames.map((name) => (
-            <span
-              key={name}
-              className="inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium"
-            >
-              {name}
-              <button
-                type="button"
-                className="text-muted-foreground hover:text-foreground"
-                aria-label={`Remove ${name}`}
-                onClick={() =>
-                  onNewSkillNamesChange(
-                    newSkillNames.filter((item) => item !== name)
-                  )
-                }
-              >
-                ×
-              </button>
-            </span>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }

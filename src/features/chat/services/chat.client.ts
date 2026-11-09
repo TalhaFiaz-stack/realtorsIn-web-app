@@ -1,5 +1,6 @@
 import { bffRequest } from "@/lib/api/client";
 import type {
+  BlockedChatUser,
   ChatMessage,
   ConversationsPage,
   MessagesPage,
@@ -228,5 +229,62 @@ export async function joinConversationSocketRequest(
     path: "chat/join",
     method: "POST",
     data: { conversationId, action },
+  });
+}
+
+export async function editMessageRequest(input: {
+  messageId: number;
+  content: string;
+}) {
+  return bffRequest<{ ok: true }>({
+    path: `chat/messages/${input.messageId}/edit`,
+    method: "POST",
+    data: { content: input.content },
+  });
+}
+
+export async function reactToMessageRequest(input: {
+  messageId: number;
+  emoji: string;
+}) {
+  return bffRequest<{ ok: true }>({
+    path: `chat/messages/${input.messageId}/react`,
+    method: "POST",
+    data: { emoji: input.emoji },
+  });
+}
+
+export async function deleteMessageRequest(input: {
+  messageId: number;
+  deleteForEveryone: boolean;
+}) {
+  return bffRequest<{ ok: true }>({
+    path: `chat/messages/${input.messageId}/delete`,
+    method: "POST",
+    data: { deleteForEveryone: input.deleteForEveryone },
+  });
+}
+
+export async function blockUserRequest(input: { userId: number; reason?: string }) {
+  return bffRequest<{ ok: true }>({
+    path: `chat/block/${input.userId}`,
+    method: "POST",
+    data: { reason: input.reason },
+  });
+}
+
+export async function unblockUserRequest(userId: number) {
+  return bffRequest<{ ok: true }>({
+    path: `chat/block/${userId}/unblock`,
+    method: "POST",
+    data: {},
+  });
+}
+
+export async function fetchBlockedUsers(signal?: AbortSignal) {
+  return bffRequest<{ ok: true; users: BlockedChatUser[] }>({
+    path: "chat/blocked-users",
+    method: "GET",
+    signal,
   });
 }

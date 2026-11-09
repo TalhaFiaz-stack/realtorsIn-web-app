@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack -p 3002 -H 0.0.0.0",
+    "dev:https": "next dev --turbopack -p 3002 --experimental-https",
     "build": "next build --turbopack",
     "build:isolated": "bash scripts/build-isolated.sh",
     "start:isolated": "bash scripts/start-isolated.sh",
@@ -36,6 +37,7 @@
     "axios": "^1.21.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "firebase": "11.10.0",
     "i18next": "^26.7.1",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.67.0",
