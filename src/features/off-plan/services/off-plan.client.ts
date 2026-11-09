@@ -4,6 +4,7 @@ import type {
   UnitDocumentOptions,
 } from "@/features/off-plan/lib/off-plan-unit";
 import { bffRequest } from "@/lib/api/client";
+import type { OffPlanFeedSection } from "@/features/off-plan/lib/off-plan-feed-sections";
 import type { OffPlanSearchSections } from "@/features/off-plan/types/off-plan-search.types";
 import type {
   OffPlanDistrict,
@@ -254,5 +255,17 @@ export async function shareOffPlanProjectPostClient(input: {
     path: "off-plan/share-post",
     method: "POST",
     data: input,
+  });
+}
+
+export async function fetchOffPlanFeedSectionsClient(
+  coords: { lat: number; lng: number } | null,
+  signal?: AbortSignal
+) {
+  const qs = coords ? `?lat=${coords.lat}&lng=${coords.lng}` : "";
+  return bffRequest<{ ok: true; sections: OffPlanFeedSection[] }>({
+    path: `off-plan/top${qs}`,
+    method: "GET",
+    signal,
   });
 }

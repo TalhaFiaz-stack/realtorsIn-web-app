@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Newspaper, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
 import { useRouter } from "next/navigation";
@@ -124,6 +125,8 @@ export function ProfileScreen({
       query.error.code === "SESSION_EXPIRED";
     const notFound =
       query.error instanceof ApiError && query.error.code === "NOT_FOUND";
+    const restricted =
+      query.error instanceof ApiError && query.error.code === "FORBIDDEN";
     const nextPath = viewingByUsername
       ? `/u/${encodeURIComponent(username!.trim())}`
       : viewingById
@@ -138,10 +141,12 @@ export function ProfileScreen({
               ? "Session expired"
               : notFound
                 ? "Profile not found"
-                : "Profile unavailable"
+                : restricted
+                  ? "Profile not available"
+                  : "Profile unavailable"
           }
           description={profileErrorMessage(query.error)}
-          onRetry={sessionExpired ? undefined : () => void query.refetch()}
+          onRetry={sessionExpired || restricted ? undefined : () => void query.refetch()}
         />
         {sessionExpired ? (
           <div className="flex justify-center">
@@ -211,17 +216,23 @@ export function ProfileScreen({
       {profile.isOwn ? <MeProfileLinksPanel /> : null}
 
       <Tabs defaultValue={defaultTab} className="w-full">
-        <TabsList className="flex h-auto w-full justify-start gap-1 rounded-[var(--radius)] border border-border bg-card p-1.5 shadow-sm">
+        <TabsList className="flex h-auto w-full justify-start gap-1 rounded-xl border border-border/80 bg-card p-0 px-2 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
           {[
-            { value: "about", label: "About" },
-            { value: "posts", label: `Posts${profile.postsCount ? ` · ${profile.postsCount}` : ""}` },
+            { value: "about", label: "About", icon: UserRound, count: null },
+            { value: "posts", label: "Posts", icon: Newspaper, count: profile.postsCount || null },
           ].map((tab) => (
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className="h-9 flex-1 rounded-[calc(var(--radius)-4px)] text-sm font-semibold text-muted-foreground hover:text-foreground data-[state=active]:bg-primary/10 data-[state=active]:text-primary data-[state=active]:shadow-none sm:flex-none sm:px-6"
+              className="group relative h-12 flex-1 gap-2 rounded-none bg-transparent px-4 text-sm font-semibold text-muted-foreground shadow-none transition-colors after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:rounded-full after:bg-transparent after:transition-colors hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:after:bg-primary sm:flex-none sm:px-5"
             >
+              <tab.icon className="h-4 w-4" aria-hidden />
               {tab.label}
+              {tab.count != null ? (
+                <span className="rounded-full bg-muted px-1.5 py-px text-[11px] font-semibold tabular-nums text-muted-foreground transition-colors group-data-[state=active]:bg-primary/12 group-data-[state=active]:text-primary">
+                  {tab.count.toLocaleString()}
+                </span>
+              ) : null}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -331,7 +342,7 @@ export function ProfileScreen({
 function ProfileBackNav({ onBack }: { onBack: () => void }) {
   const { t } = useTranslation();
   return (
-    <ShellBackRow className="mb-0.5">
+    <ShellBackRow>
       <ShellBackButton label={t("Back")} onClick={onBack} />
     </ShellBackRow>
   );

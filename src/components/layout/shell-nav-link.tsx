@@ -27,16 +27,16 @@ export function ShellNavLink({
     <>
       <span
         className={cn(
-          "relative inline-flex h-8 w-12 items-center justify-center rounded-full transition-colors",
+          "relative inline-flex h-7 w-11 items-center justify-center rounded-full transition-colors",
           active ? "bg-primary/10 text-primary" : "group-hover:bg-muted"
         )}
       >
         <Icon
-          className={cn("h-[22px] w-[22px]", active ? "stroke-[2]" : "stroke-[1.6]")}
+          className={cn("h-5 w-5", active ? "stroke-[2]" : "stroke-[1.6]")}
           aria-hidden
         />
         {badgeCount != null ? (
-          <span className="absolute -top-0.5 end-1 inline-flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-2 ring-card">
+          <span className="absolute -top-1 end-0.5 inline-flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-2 ring-card">
             {formatNavBadgeLabel(badgeCount)}
           </span>
         ) : null}
@@ -46,9 +46,9 @@ export function ShellNavLink({
   );
 
   const classes = cn(
-    "group relative hidden h-full min-w-[4.5rem] flex-col items-center justify-center gap-0.5 px-1.5 transition-colors md:flex",
+    "group relative hidden h-full min-w-[4.5rem] flex-col items-center justify-center gap-1 px-1.5 pb-1 transition-colors md:flex",
     active
-      ? "font-semibold text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-t-full after:bg-primary"
+      ? "font-semibold text-foreground after:absolute after:inset-x-4 after:bottom-0 after:h-[3px] after:rounded-t-full after:bg-primary"
       : "font-medium text-muted-foreground hover:text-foreground",
     comingSoon && "cursor-not-allowed opacity-45 hover:text-muted-foreground",
     className
@@ -99,9 +99,9 @@ export const ShellNavButton = forwardRef<
       type="button"
       aria-label={badgeCount != null ? `${label}, ${badgeCount} unread` : label}
       className={cn(
-        "group relative hidden h-full min-w-[4.5rem] flex-col items-center justify-center gap-0.5 px-1.5 transition-colors focus-visible:outline-none md:flex",
+        "group relative hidden h-full min-w-[4.5rem] flex-col items-center justify-center gap-1 px-1.5 pb-1 transition-colors focus-visible:outline-none md:flex",
         highlighted
-          ? "font-semibold text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-[3px] after:rounded-t-full after:bg-primary"
+          ? "font-semibold text-foreground after:absolute after:inset-x-4 after:bottom-0 after:h-[3px] after:rounded-t-full after:bg-primary"
           : "font-medium text-muted-foreground hover:text-foreground",
         className
       )}
@@ -109,13 +109,13 @@ export const ShellNavButton = forwardRef<
     >
       <span
         className={cn(
-          "relative inline-flex h-8 w-12 items-center justify-center rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40",
+          "relative inline-flex h-7 w-11 items-center justify-center rounded-full transition-colors group-focus-visible:ring-2 group-focus-visible:ring-primary/40",
           highlighted ? "bg-primary/10 text-primary" : "group-hover:bg-muted"
         )}
       >
-        <Icon className={cn("h-[22px] w-[22px]", highlighted ? "stroke-[2]" : "stroke-[1.6]")} aria-hidden />
+        <Icon className={cn("h-5 w-5", highlighted ? "stroke-[2]" : "stroke-[1.6]")} aria-hidden />
         {badgeCount != null ? (
-          <span className="absolute -top-0.5 end-1 inline-flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-2 ring-card">
+          <span className="absolute -top-1 end-0.5 inline-flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold leading-none text-destructive-foreground ring-2 ring-card">
             {formatNavBadgeLabel(badgeCount)}
           </span>
         ) : null}

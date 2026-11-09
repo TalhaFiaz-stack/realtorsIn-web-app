@@ -68,6 +68,13 @@ export async function fetchOwnSocialProfile(): Promise<SocialProfile> {
   return profile;
 }
 
+/** `{ blocked: true }` / `error_code: "PROFILE_BLOCKED"` from `GET /api/social_profile`. */
+function isProfileBlockedPayload(payload: unknown): boolean {
+  if (!payload || typeof payload !== "object") return false;
+  const p = payload as { blocked?: unknown; error_code?: unknown };
+  return p.blocked === true || p.error_code === "PROFILE_BLOCKED";
+}
+
 export async function fetchProfileById(
   socialProfileId: number
 ): Promise<SocialProfile> {
@@ -84,6 +91,18 @@ export async function fetchProfileById(
     }),
     resolveOwnSocialProfileId(),
   ]);
+
+  if (isProfileBlockedPayload(payload)) {
+    // The owner blocked the viewer — mobile shows a "not available" banner.
+    const friendly = (payload as { user_friendly_message?: unknown }).user_friendly_message;
+    throw new ApiError(
+      "FORBIDDEN",
+      typeof friendly === "string" && friendly.trim()
+        ? friendly
+        : "This profile is not available. The user may have restricted access to their profile.",
+      403
+    );
+  }
 
   if (!isBackendSuccess(payload)) {
     throw new ApiError(

@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Pin,
   PinOff,
+  Plus,
   Search,
   Trash2,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { useConfirm } from "@/components/common/confirm-provider";
+import { NewChatDialog } from "@/components/chat/new-chat-dialog";
 import { EmptyState } from "@/components/states/empty-state";
 import { ErrorState } from "@/components/states/error-state";
 import { ConversationsListSkeleton } from "@/components/states/list-row-skeleton";
@@ -51,6 +53,7 @@ export function ConversationsScreen({
     return () => window.clearTimeout(timer);
   }, [search]);
   const [showArchived, setShowArchived] = useState(false);
+  const [newChatOpen, setNewChatOpen] = useState(false);
   const query = useConversations({
     realtimeConnected: realtime.connected,
     search: debouncedSearch || undefined,
@@ -80,15 +83,28 @@ export function ConversationsScreen({
   return (
     <div className="flex h-full min-h-0 flex-col">
       <div className="space-y-2 border-b border-border px-3 py-2">
-        <div className="relative">
-          <Search className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search messages"
-            className="h-9 ps-8"
-            aria-label="Search conversations"
-          />
+        <div className="flex items-center gap-2">
+          <div className="relative min-w-0 flex-1">
+            <Search className="pointer-events-none absolute start-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search messages"
+              className="h-9 ps-8"
+              aria-label="Search conversations"
+            />
+          </div>
+          {/* Mobile parity: + opens your connections to start a new chat. */}
+          <Button
+            type="button"
+            size="icon"
+            className="h-9 w-9 shrink-0 rounded-full"
+            onClick={() => setNewChatOpen(true)}
+            aria-label="New message"
+            title="New message"
+          >
+            <Plus className="h-4 w-4" aria-hidden />
+          </Button>
         </div>
         <div className="flex gap-1">
           <Button
@@ -129,16 +145,10 @@ export function ConversationsScreen({
             description={
               showArchived
                 ? "Archived conversations will appear here."
-                : "Message a connection from Network to start a chat."
+                : "Start a chat with one of your connections."
             }
-            actionLabel={showArchived ? undefined : "Find people"}
-            onAction={
-              showArchived
-                ? undefined
-                : () => {
-                    window.location.href = "/connections";
-                  }
-            }
+            actionLabel={showArchived ? undefined : "Start a new chat"}
+            onAction={showArchived ? undefined : () => setNewChatOpen(true)}
           />
         ) : null}
 
@@ -180,6 +190,7 @@ export function ConversationsScreen({
           </ul>
         ) : null}
       </div>
+      <NewChatDialog open={newChatOpen} onOpenChange={setNewChatOpen} />
     </div>
   );
 }

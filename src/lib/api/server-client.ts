@@ -8,6 +8,39 @@ import { getRequestLocale } from "@/features/localization/server/locale.server";
 
 const DEFAULT_TIMEOUT_MS = 20_000;
 
+/**
+ * Dev-only: say *why* the Social API call failed. The old message always said
+ * "run SocialProfileREM", even when it was running and just refused, dropped
+ * or timed out one request.
+ */
+function describeSocialApiNetworkError(
+  error: unknown,
+  base: string,
+  path: string,
+  timeoutMs: number
+): string {
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String((error as { code?: unknown }).code ?? "")
+      : "";
+  const where = `${base}${path.startsWith("/") ? path : `/${path}`}`;
+  switch (code) {
+    case "ECONNREFUSED":
+      return `Social API is not running at ${base} (connection refused). Start SocialProfileREM (port 3000) or set SOCIAL_API_URL in .env.local.`;
+    case "ECONNABORTED":
+    case "ETIMEDOUT":
+      return `Social API timed out after ${Math.round(timeoutMs / 1000)}s: ${where}. The backend is running but slow or busy.`;
+    case "ECONNRESET":
+    case "EPIPE":
+      return `Social API dropped the connection (${code}): ${where}. The backend may have restarted or crashed on this request — check its log.`;
+    case "ENOTFOUND":
+    case "EAI_AGAIN":
+      return `Social API host not found (${code}): ${base}. Check SOCIAL_API_URL in .env.local.`;
+    default:
+      return `Cannot reach Social API at ${base}${code ? ` (${code})` : ""}: ${where}. Check that SocialProfileREM is running (port 3000) or set SOCIAL_API_URL in .env.local.`;
+  }
+}
+
 function createBaseClient(): AxiosInstance {
   const { SOCIAL_API_URL } = getEnv();
   return axios.create({
@@ -96,7 +129,7 @@ export async function socialApiRequest<T>(
       const base = getEnv().SOCIAL_API_URL.replace(/\/$/, "");
       apiError = new ApiError(
         "NETWORK",
-        `Cannot reach Social API at ${base}. Run SocialProfileREM locally (port 3000) or set SOCIAL_API_URL in .env.local.`,
+        describeSocialApiNetworkError(error, base, path, timeoutMs ?? DEFAULT_TIMEOUT_MS),
         0,
         apiError.details
       );

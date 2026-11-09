@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { MapPin, Pencil, Plus } from "lucide-react";
 import { Avatar, AvatarImage, AvatarPlaceholderFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { OpenToAvatarFrame } from "@/components/profile/open-to-avatar-frame";
@@ -13,6 +13,8 @@ import {
 } from "@/components/profile/profile-badges";
 import { ProfileConnectionActions } from "@/components/profile/profile-connection-actions";
 import { ProfileShareMenu } from "@/components/profile/profile-share-menu";
+import { ProfileMoreMenu } from "@/components/profile/profile-more-menu";
+import { ProfileImageLightbox } from "@/components/profile/profile-image-lightbox";
 import { ProfileHandle } from "@/components/shared/profile-handle";
 import { RemoteImage } from "@/components/shared/remote-image";
 import { StoryAvatarRing } from "@/components/stories/story-avatar";
@@ -48,6 +50,10 @@ export function ProfileHeader({
     profile.userId
   );
   const [storyOpen, setStoryOpen] = useState(false);
+  /** Full-size viewer for the profile / cover photo (mobile taps to view). */
+  const [viewer, setViewer] = useState<{ url: string; title: string } | null>(null);
+  const profilePhotoUrl = profile.profileImage?.url ?? null;
+  const coverPhotoUrl = profile.coverImage?.url ?? null;
   const hasStories = Boolean(storyGroup?.stories.length);
 
   const headline =
@@ -70,17 +76,24 @@ export function ProfileHeader({
   return (
     <section className="overflow-hidden rounded-[var(--radius)] border border-border bg-card shadow-sm">
       <div className="relative h-36 bg-muted sm:h-48">
-        {profile.coverImage?.url ? (
-          <RemoteImage
-            src={profile.coverImage.url}
-            alt=""
-            fill
-            sizes="(max-width: 768px) 100vw, 672px"
-            className="object-cover"
-            fallbackClassName="absolute inset-0"
-            unoptimized
-            priority
-          />
+        {coverPhotoUrl ? (
+          <button
+            type="button"
+            onClick={() => setViewer({ url: coverPhotoUrl, title: "Cover photo" })}
+            className="absolute inset-0 block cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary"
+            aria-label="View cover photo"
+          >
+            <RemoteImage
+              src={coverPhotoUrl}
+              alt=""
+              fill
+              sizes="(max-width: 768px) 100vw, 768px"
+              className="object-cover"
+              fallbackClassName="absolute inset-0"
+              unoptimized
+              priority
+            />
+          </button>
         ) : (
           <div className="absolute inset-0 bg-gradient-to-br from-secondary/80 via-primary/40 to-accent" />
         )}
@@ -111,6 +124,7 @@ export function ProfileHeader({
       <div className="relative px-4 pb-5 sm:px-6">
         <div className="absolute right-4 top-3 z-10 flex items-center gap-2 sm:right-6 sm:top-4">
           <ProfileShareMenu profile={profile} />
+          {!profile.isOwn ? <ProfileMoreMenu profile={profile} /> : null}
           {profile.isOwn ? (
             <Button
               type="button"
@@ -150,16 +164,23 @@ export function ProfileHeader({
                 </StoryAvatarRing>
               </button>
             ) : (
-              <div className="relative h-[90px] w-[90px]">
+              <button
+                type="button"
+                disabled={!profilePhotoUrl}
+                onClick={() =>
+                  profilePhotoUrl &&
+                  setViewer({ url: profilePhotoUrl, title: `${profile.fullName} · profile photo` })
+                }
+                className="relative block h-[90px] w-[90px] rounded-full enabled:cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+                aria-label="View profile photo"
+              >
                 <div className="h-full w-full overflow-hidden rounded-full border-[3px] border-card bg-muted shadow-sm">
                   <Avatar className="h-full w-full rounded-full">
-                    {profile.profileImage?.url ? (
-                      <AvatarImage src={profile.profileImage.url} alt="" />
-                    ) : null}
+                    {profilePhotoUrl ? <AvatarImage src={profilePhotoUrl} alt="" /> : null}
                     <AvatarPlaceholderFallback />
                   </Avatar>
                 </div>
-              </div>
+              </button>
             )}
             <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-full">
               <OpenToAvatarFrame openTo={profile.openTo} />
@@ -219,6 +240,14 @@ export function ProfileHeader({
             {roleCompanyLine ? <p>{roleCompanyLine}</p> : null}
           </div>
 
+          {/* Mobile shows the location only when the member has added one. */}
+          {profile.location?.trim() ? (
+            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MapPin className="h-4 w-4 shrink-0" aria-hidden />
+              <span>{profile.location.trim()}</span>
+            </p>
+          ) : null}
+
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-0.5 text-sm">
             <StatLink
               value={profile.connectionsCount}
@@ -263,6 +292,12 @@ export function ProfileHeader({
           )}
         </div>
       </div>
+      <ProfileImageLightbox
+        images={viewer ? [viewer.url] : []}
+        startIndex={viewer ? 0 : null}
+        title={viewer?.title}
+        onClose={() => setViewer(null)}
+      />
       <StoryViewer
         open={storyOpen}
         groups={storyGroups}

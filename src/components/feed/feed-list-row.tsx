@@ -3,6 +3,7 @@
 import { PostCard } from "@/components/feed/post-card";
 import { FeedEventsSuggestionsRow } from "@/components/feed/feed-events-suggestions-row";
 import { FeedJobsSuggestionsRow } from "@/components/feed/feed-jobs-suggestions-row";
+import { FeedOffPlanSuggestionsRow } from "@/components/feed/feed-offplan-suggestions-row";
 import {
   FeedPeopleSuggestionsRow,
   isPeopleModule,
@@ -73,6 +74,10 @@ export function FeedListRow({
         people={row.people}
       />
     );
+  }
+
+  if (row.moduleType === "offplan_suggestions" && row.offPlanSection) {
+    return <FeedOffPlanSuggestionsRow section={row.offPlanSection} />;
   }
 
   if (row.moduleType === "job_suggestions" && row.jobs?.length) {

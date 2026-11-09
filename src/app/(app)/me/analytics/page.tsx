@@ -1,12 +1,12 @@
 import { MePageShell } from "@/components/me/me-page-shell";
-import { ProfileAnalyticsDetailScreen } from "@/components/profile/profile-analytics-detail-screen";
+import { ProfileAnalyticsPage } from "@/components/profile/profile-analytics-page";
 
 export const metadata = { title: "Profile analytics" };
 
 export default function Page() {
   return (
     <MePageShell title="Analytics" description="How your profile and posts perform">
-      <ProfileAnalyticsDetailScreen />
+      <ProfileAnalyticsPage />
     </MePageShell>
   );
 }

@@ -140,7 +140,7 @@ export function ConnectionsScreen() {
                 </Button>
               }
             />
-            <TabsList className="-my-1 flex h-auto w-full justify-start gap-2 overflow-x-auto bg-transparent p-0 py-1 [scrollbar-width:none]">
+            <TabsList className="flex h-auto w-full justify-start gap-2 overflow-x-auto bg-transparent p-0 py-0.5 [scrollbar-width:none]">
               <TabsTrigger value="all" className="h-8 shrink-0 rounded-full border border-border bg-background px-4 text-sm font-medium text-foreground/80 shadow-none transition-colors hover:bg-muted/60 data-[state=active]:border-primary data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm">
                 Connected
                 {listQuery.data?.totalConnections != null && tab === "all" ? (

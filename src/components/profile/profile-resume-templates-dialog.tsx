@@ -141,12 +141,20 @@ export function ProfileResumeTemplatesDialog({
         onOpenChange(next);
       }}
     >
-      <DialogContent className="flex max-h-[90vh] max-w-lg flex-col gap-0 overflow-hidden p-0 sm:max-w-lg">
-        <DialogHeader className="border-b border-border px-5 py-4">
-          <DialogTitle>Choose Template</DialogTitle>
-          <DialogDescription>
-            Select a professional template to showcase your profile
-          </DialogDescription>
+      <DialogContent
+        className="flex max-h-[min(92dvh,52rem)] max-w-lg flex-col gap-0 overflow-hidden rounded-2xl p-0 sm:max-w-lg"
+        closeButtonClassName="end-4 top-4 inline-flex h-8 w-8 items-center justify-center rounded-full text-muted-foreground hover:bg-muted hover:text-foreground"
+      >
+        <DialogHeader className="flex-row items-start gap-3 space-y-0 border-b border-border/70 px-5 py-4 pe-14 text-start">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <FileDown className="h-5 w-5" aria-hidden />
+          </span>
+          <div className="min-w-0 pt-0.5">
+            <DialogTitle className="text-base font-semibold leading-tight">Choose a template</DialogTitle>
+            <DialogDescription className="mt-1 text-[13px] leading-snug">
+              Pick a design for your profile PDF or shareable link
+            </DialogDescription>
+          </div>
         </DialogHeader>
 
         <div className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
@@ -210,7 +218,7 @@ export function ProfileResumeTemplatesDialog({
         </div>
 
         {templates.length > 0 ? (
-          <DialogFooter className="gap-2 border-t border-border px-5 py-4 sm:justify-between">
+          <DialogFooter className="gap-2 border-t border-border/70 bg-muted/30 px-5 py-3 sm:justify-between">
             <Button
               type="button"
               variant="outline"

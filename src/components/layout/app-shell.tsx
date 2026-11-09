@@ -165,6 +165,9 @@ export function AppShell({
               ? "gap-2 md:gap-2.5"
               : "gap-3 md:gap-4",
             lockViewport ? "min-h-0 flex-1 items-stretch" : "items-start",
+            // Profile: capped main column + right rail, no left rail — center the
+            // pair so the spare width splits evenly instead of piling up on one side.
+            profileLayout && !showLeftRail && "justify-center",
             mapView
               ? "max-w-[96rem]"
               : wideMain

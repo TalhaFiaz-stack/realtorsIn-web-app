@@ -99,15 +99,15 @@ export function ShellMeMenu({
   }
 
   const triggerClassName = cn(
-    "relative flex h-full min-w-[4.75rem] flex-col items-center justify-center gap-1 px-2 text-[12px] transition-colors",
+    "relative flex h-full min-w-[4.5rem] flex-col items-center justify-center gap-1 px-2 pb-1 text-[11px] transition-colors",
     active
-      ? "font-semibold text-foreground after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:bg-foreground"
-      : "font-normal text-muted-foreground hover:text-foreground"
+      ? "font-semibold text-foreground after:absolute after:inset-x-4 after:bottom-0 after:h-[3px] after:rounded-t-full after:bg-primary"
+      : "font-medium text-muted-foreground hover:text-foreground"
   );
 
   const triggerContent = (
     <>
-      <Avatar className="h-6 w-6 ring-1 ring-border/80">
+      <Avatar className="h-7 w-7 ring-1 ring-border/80">
         {member.avatarUrl ? (
           <AvatarImage src={member.avatarUrl} alt="" />
         ) : null}

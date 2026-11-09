@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchEventsPageRequest } from "@/features/events/services/events.client";
 import { fetchJobsPageRequest } from "@/features/jobs/services/jobs.client";
+import { fetchOffPlanFeedSectionsClient } from "@/features/off-plan/services/off-plan.client";
 import type { FeedSuggestionModuleData } from "@/features/feed/lib/merge-feed-with-suggestions";
 import {
   fetchContactSuggestions,
@@ -68,9 +69,24 @@ export function useFeedSuggestions(enabled: boolean) {
     },
   });
 
+  // Off-plan "top projects" rows load on their own so a slow social call
+  // never holds them back (and vice versa). Same endpoint as mobile.
+  const offPlanQuery = useQuery({
+    queryKey: [...feedSuggestionsQueryKey, "offplan", geo?.lat ?? "", geo?.lng ?? ""] as const,
+    enabled,
+    staleTime: 10 * 60_000,
+    queryFn: ({ signal }) =>
+      fetchOffPlanFeedSectionsClient(geo, signal)
+        .then((res) => res.sections ?? [])
+        .catch(() => []),
+  });
+
   const bundle = useMemo(
-    () => query.data ?? EMPTY_BUNDLE,
-    [query.data]
+    () => ({
+      ...(query.data ?? EMPTY_BUNDLE),
+      offplan_sections: offPlanQuery.data ?? [],
+    }),
+    [query.data, offPlanQuery.data]
   );
 
   return { bundle, isLoading: query.isLoading, refetch: query.refetch };

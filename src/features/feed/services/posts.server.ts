@@ -596,3 +596,31 @@ export async function setPostPinned(input: PinPostInput): Promise<void> {
     );
   }
 }
+
+/**
+ * Block a member from their profile — mobile `SocialProfile` ⋮ → Block
+ * (`posts/block/post_visibility`, type "user"). The backend also blocks chat,
+ * removes any connection and hides their posts; they show in
+ * Settings → Blocked users.
+ */
+export async function blockUserProfile(input: { blockedProfileId: number }): Promise<string> {
+  const payload = await socialApiRequest<unknown>({
+    path: "/api/posts/block/post_visibility",
+    method: "POST",
+    auth: true,
+    isFormData: true,
+    data: formFromRecord({
+      type: "user",
+      blocked_user_id: String(input.blockedProfileId),
+    }),
+  });
+
+  if (!isBackendSuccess(payload)) {
+    throw new ApiError(
+      "SERVER",
+      backendMessage(payload, "Unable to block this user"),
+      502
+    );
+  }
+  return backendMessage(payload, "User blocked");
+}

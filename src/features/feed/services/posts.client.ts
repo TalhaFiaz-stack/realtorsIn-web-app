@@ -284,3 +284,12 @@ export async function pinPostRequest(input: {
     data: input,
   });
 }
+
+/** Block a member from their profile (mobile profile ⋮ → Block). */
+export async function blockProfileRequest(profileId: number) {
+  return bffRequest<{ ok: true; message?: string }>({
+    path: "profile/block",
+    method: "POST",
+    data: { profileId },
+  });
+}

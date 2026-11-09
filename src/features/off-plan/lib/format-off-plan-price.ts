@@ -4,7 +4,8 @@ export function formatOffPlanPrice(
 ): string {
   if (value == null || value <= 0) return "Inquire";
   const cur = currency ?? "AED";
-  return `${cur} ${value.toLocaleString("en-US")}`;
+  // Whole dirhams — upstream sends values like 934117.65 for "from" prices.
+  return `${cur} ${Math.round(value).toLocaleString("en-US")}`;
 }
 
 /** Handover / completion label — mobile shows "Launching Soon" when no date is set. */

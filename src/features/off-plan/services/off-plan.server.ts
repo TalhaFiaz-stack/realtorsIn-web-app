@@ -10,6 +10,10 @@ import {
   mapOffPlanProjectsPage,
 } from "@/features/off-plan/lib/map-off-plan";
 import { buildOffPlanProjectsFormData } from "@/features/off-plan/lib/build-projects-form-data";
+import {
+  mapOffPlanFeedSections,
+  type OffPlanFeedSection,
+} from "@/features/off-plan/lib/off-plan-feed-sections";
 import type {
   OffPlanDistrict,
   OffPlanFilterMeta,
@@ -167,4 +171,26 @@ export async function fetchOffPlanProjectsForMap(
     if (oldest) mapCache.delete(oldest);
   }
   return promise;
+}
+
+/** Dubai downtown — used when the browser shares no location (mobile also needs a lat/long). */
+const OFF_PLAN_FEED_DEFAULT_COORDS = { lat: 25.2048, lng: 55.2708 };
+
+/**
+ * Feed "top projects" sections (`rn/projects/top`) — public catalog endpoint,
+ * same call as mobile `getTopProjects(lat, long)`.
+ */
+export async function fetchOffPlanFeedSections(
+  coords: { lat: number; lng: number } | null
+): Promise<OffPlanFeedSection[]> {
+  const { lat, lng } = coords ?? OFF_PLAN_FEED_DEFAULT_COORDS;
+  const payload = await offplanRequest<unknown>({
+    path: `rn/projects/top?lat=${encodeURIComponent(lat)}&long=${encodeURIComponent(lng)}`,
+    method: "GET",
+    auth: false,
+  });
+  assertOffplan(payload, "Unable to load top projects");
+  const sections = mapOffPlanFeedSections(payload);
+  // Without a real location "Projects Near You" would just be Dubai — drop it.
+  return coords ? sections : sections.filter((s) => s.key !== "top_nearest");
 }
