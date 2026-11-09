@@ -67,7 +67,6 @@ export function OffPlanShareProjectMessageDialog({
     setSelectedIds([]);
     setMessage("");
     loadConnections();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   const filtered = useMemo(() => {

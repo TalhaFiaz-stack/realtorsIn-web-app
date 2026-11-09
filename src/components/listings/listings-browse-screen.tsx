@@ -3,6 +3,10 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSearchParams } from "next/navigation";
+import {
+  readListingsFilterSession,
+  writeListingsFilterSession,
+} from "@/features/off-plan/lib/listings-filter-session";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListingsBrowseToolbar } from "@/components/listings/listings-browse-toolbar";
 import { OffPlanProjectCard } from "@/components/listings/off-plan-project-card";
@@ -109,6 +113,28 @@ export function ListingsBrowseScreen() {
     useState<PropertyHubFilterDraft>(EMPTY_MARKET_LISTING_FILTERS);
   const initialMapView = searchParams.get("view") === "map";
   const initialMapProject = searchParams.get("project");
+  /** Filters restored from this tab's session (until then queries wait). */
+  const [filtersRestored, setFiltersRestored] = useState(false);
+
+  useEffect(() => {
+    const saved = readListingsFilterSession<OffPlanFilterDraft, PropertyHubFilterDraft>();
+    if (saved?.offPlan) setOffPlanFilters({ ...EMPTY_OFF_PLAN_FILTERS, ...saved.offPlan });
+    if (saved?.market) {
+      setAppliedMarketListingFilters({ ...EMPTY_MARKET_LISTING_FILTERS, ...saved.market });
+    }
+    if (saved?.marketSort) setMarketSortBy(saved.marketSort);
+    setFiltersRestored(true);
+  }, []);
+
+  useEffect(() => {
+    if (!filtersRestored) return;
+    writeListingsFilterSession({
+      offPlan: offPlanFilters,
+      market: appliedMarketListingFilters,
+      marketSort: marketSortBy,
+    });
+  }, [filtersRestored, offPlanFilters, appliedMarketListingFilters, marketSortBy]);
+
   const [mapView, setMapView] = useState(initialMapView);
   const [selectedMapProjectId, setSelectedMapProjectId] = useState<
     string | null
@@ -225,13 +251,15 @@ export function ListingsBrowseScreen() {
     setSearch("");
   };
 
-  const offPlanQuery = useOffPlanProjects(offPlanListFilters);
+  const offPlanQuery = useOffPlanProjects(offPlanListFilters, {
+    enabled: filtersRestored,
+  });
 
   const mapProjectsQuery = useQuery({
     queryKey: ["off-plan", "map", offPlanListFilters],
     queryFn: ({ signal }) =>
       fetchOffPlanMapProjectsClient(offPlanListFilters, signal),
-    enabled: tab === "off-plan" && mapView,
+    enabled: filtersRestored && tab === "off-plan" && mapView,
     staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
@@ -257,12 +285,12 @@ export function ListingsBrowseScreen() {
 
   const secondaryQuery = usePublishedListings(
     { mode: "secondary", ...marketListingsQueryInput },
-    { enabled: tab === "secondary" },
+    { enabled: filtersRestored && tab === "secondary" },
   );
 
   const rentalQuery = usePublishedListings(
     { mode: "rental", ...marketListingsQueryInput },
-    { enabled: tab === "rental" },
+    { enabled: filtersRestored && tab === "rental" },
   );
 
   const offPlanProjects = useMemo(
@@ -453,7 +481,7 @@ export function ListingsBrowseScreen() {
           mapView ? (
             // Show the map right away with the projects already loaded for the
             // grid; the full set streams in behind a small loading pill.
-            mapProjectsQuery.isLoading && offPlanProjects.length === 0 ? (
+            (!filtersRestored || mapProjectsQuery.isLoading) && offPlanProjects.length === 0 ? (
               <OffPlanMapBrowseSkeleton />
             ) : mapProjectsQuery.isError && offPlanProjects.length === 0 ? (
               <ErrorState
@@ -479,7 +507,7 @@ export function ListingsBrowseScreen() {
           ) : (
             <>
               <ListingGrid
-                loading={offPlanQuery.isLoading}
+                loading={!filtersRestored || offPlanQuery.isLoading}
                 error={offPlanQuery.isError}
                 onRetry={() => offPlanQuery.refetch()}
                 emptyTitle="No projects found"
@@ -495,7 +523,7 @@ export function ListingsBrowseScreen() {
               <ListingInfiniteScrollFooter
                 hasNextPage={offPlanQuery.hasNextPage}
                 isFetchingNextPage={offPlanQuery.isFetchingNextPage}
-                isLoading={offPlanQuery.isLoading}
+                isLoading={!filtersRestored || offPlanQuery.isLoading}
                 itemCount={offPlanProjects.length}
                 fetchNextPage={() => offPlanQuery.fetchNextPage()}
               />
@@ -506,7 +534,7 @@ export function ListingsBrowseScreen() {
         {tab === "secondary" ? (
           <>
             <ListingGrid
-              loading={secondaryQuery.isLoading}
+              loading={!filtersRestored || secondaryQuery.isLoading}
               error={secondaryQuery.isError}
               onRetry={() => secondaryQuery.refetch()}
               emptyTitle="No secondary listings"
@@ -520,7 +548,7 @@ export function ListingsBrowseScreen() {
             <ListingInfiniteScrollFooter
               hasNextPage={secondaryQuery.hasNextPage}
               isFetchingNextPage={secondaryQuery.isFetchingNextPage}
-              isLoading={secondaryQuery.isLoading}
+              isLoading={!filtersRestored || secondaryQuery.isLoading}
               itemCount={secondaryListings.length}
               fetchNextPage={() => secondaryQuery.fetchNextPage()}
             />
@@ -530,7 +558,7 @@ export function ListingsBrowseScreen() {
         {tab === "rental" ? (
           <>
             <ListingGrid
-              loading={rentalQuery.isLoading}
+              loading={!filtersRestored || rentalQuery.isLoading}
               error={rentalQuery.isError}
               onRetry={() => rentalQuery.refetch()}
               emptyTitle="No rental listings"
@@ -544,7 +572,7 @@ export function ListingsBrowseScreen() {
             <ListingInfiniteScrollFooter
               hasNextPage={rentalQuery.hasNextPage}
               isFetchingNextPage={rentalQuery.isFetchingNextPage}
-              isLoading={rentalQuery.isLoading}
+              isLoading={!filtersRestored || rentalQuery.isLoading}
               itemCount={rentalListings.length}
               fetchNextPage={() => rentalQuery.fetchNextPage()}
             />

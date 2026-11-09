@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { ChatToastHost } from "@/components/chat/chat-toast-host";
 import { InfluencerFirstVideoDialog } from "@/components/influencer/influencer-first-video-dialog";
 import { InfluencerPromptDialog } from "@/components/influencer/influencer-prompt-dialog";
@@ -18,6 +18,7 @@ import {
 } from "@/lib/navigation/nav-badge";
 import { resolveNavUnreadBadge } from "@/lib/navigation/resolve-nav-badge";
 import {
+  isListingsMapView,
   isProfilePath,
   isWideMainPath,
   shouldShowLeftRail,
@@ -134,7 +135,9 @@ export function AppShell({
   rightRail?: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const showLeftRail = shouldShowLeftRail(pathname);
+  const searchParams = useSearchParams();
+  const mapView = isListingsMapView(pathname, searchParams.get("view"));
+  const showLeftRail = !mapView && shouldShowLeftRail(pathname);
   const showRightRail = Boolean(rightRail) && shouldShowRightRail(pathname);
   const wideMain = isWideMainPath(pathname);
   const profileLayout = isProfilePath(pathname);
@@ -162,9 +165,11 @@ export function AppShell({
               ? "gap-2 md:gap-2.5"
               : "gap-3 md:gap-4",
             lockViewport ? "min-h-0 flex-1 items-stretch" : "items-start",
-            wideMain
-              ? "max-w-[var(--shell-wide-max)]"
-              : "max-w-[var(--shell-max)]"
+            mapView
+              ? "max-w-[96rem]"
+              : wideMain
+                ? "max-w-[var(--shell-wide-max)]"
+                : "max-w-[var(--shell-max)]"
           )}
         >
           {showLeftRail ? <ShellLeftRail member={member} /> : null}

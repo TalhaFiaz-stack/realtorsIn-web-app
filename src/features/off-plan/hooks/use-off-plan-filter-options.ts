@@ -8,6 +8,10 @@ import {
 import { emptyOffPlanFilterMeta } from "@/features/off-plan/lib/map-off-plan-filter-meta";
 import { offPlanCityOptions } from "@/features/off-plan/lib/off-plan-location-filters";
 import { useMemo } from "react";
+import type { OffPlanDistrict } from "@/features/off-plan/types/off-plan.types";
+
+/** Stable empty list so the memo below does not recompute every render. */
+const NO_DISTRICTS: OffPlanDistrict[] = [];
 
 export function useOffPlanFilterOptions() {
   const metaQuery = useQuery({
@@ -22,7 +26,7 @@ export function useOffPlanFilterOptions() {
     staleTime: 60 * 60 * 1000,
   });
 
-  const districts = districtsQuery.data?.districts ?? [];
+  const districts = districtsQuery.data?.districts ?? NO_DISTRICTS;
   const filters = useMemo(() => {
     const base = metaQuery.data?.filters ?? emptyOffPlanFilterMeta();
     return {

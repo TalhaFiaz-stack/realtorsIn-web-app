@@ -143,13 +143,8 @@ export function offPlanSearchSummaryFromDraft(draft: OffPlanFilterDraft): string
         : `${draft.searchProjectIds.length} projects`
     );
   }
-  if (draft.cityId) parts.push("City");
-  if (draft.districtId) parts.push("District");
-  if (draft.developerIds?.length) {
-    parts.push(
-      draft.developerIds.length === 1 ? "1 developer" : `${draft.developerIds.length} developers`
-    );
-  }
+  // City, district and developers already show as highlighted filter pills
+  // under the search box — repeating them here read as a stray "City" query.
   return parts.join(" · ");
 }
 

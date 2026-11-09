@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import type { OffPlanDistrict, OffPlanProjectSummary } from "@/features/off-plan/types/off-plan.types";
 import { fetchGoogleMapsKeyClient } from "@/features/maps/services/google-maps.client";
 import { OffPlanMapPanelSkeleton } from "@/components/listings/off-plan-skeletons";
-import { cn } from "@/lib/utils";
 
 const OffPlanGoogleMapView = dynamic(
   () =>

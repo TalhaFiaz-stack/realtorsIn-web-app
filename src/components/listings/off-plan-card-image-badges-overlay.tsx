@@ -38,7 +38,7 @@ export function OffPlanCardImageBadgesOverlay({
             className={cn(
               "inline-flex w-fit max-w-full whitespace-normal rounded-md font-bold uppercase leading-tight shadow-sm backdrop-blur-sm",
               isMap
-                ? "px-1.5 py-0.5 text-[9px] tracking-wide"
+                ? "px-1.5 py-0.5 text-[10px] tracking-wide"
                 : "px-2 py-0.5 text-[10px] tracking-wide",
               saleOnDark ? "text-gray-900" : "text-white"
             )}
@@ -52,7 +52,7 @@ export function OffPlanCardImageBadgesOverlay({
             label={badges.secondaryStatus}
             className={cn(
               "w-fit max-w-full whitespace-normal text-start leading-tight shadow-sm backdrop-blur-[2px]",
-              isMap && "px-1.5 py-0.5 text-[8px]"
+              isMap && "px-1.5 py-0.5 text-[9px]"
             )}
           />
         ) : null}
@@ -70,7 +70,7 @@ export function OffPlanCardImageBadgesOverlay({
               label={badges.completedLabel}
               className={cn(
                 "w-fit whitespace-nowrap bg-emerald-500/95 text-white shadow-sm backdrop-blur-[2px]",
-                isMap && "px-1.5 py-0.5 text-[8px]"
+                isMap && "px-1.5 py-0.5 text-[9px]"
               )}
             />
           ) : null}

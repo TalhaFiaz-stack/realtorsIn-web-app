@@ -37,6 +37,13 @@ function toggleMulti(selected: string[], value: string): string[] {
     : [...selected, value];
 }
 
+/** "Min 382,913" from the backend's raw "382913.00" range bound. */
+function rangePlaceholder(raw: string | number | null | undefined, fallback: string): string {
+  const n = Number(raw);
+  if (raw == null || raw === "" || !Number.isFinite(n) || n <= 0) return fallback;
+  return `${fallback} ${Math.round(n).toLocaleString("en-US")}`;
+}
+
 export function OffPlanFiltersDialog({
   open,
   onOpenChange,
@@ -111,7 +118,7 @@ export function OffPlanFiltersDialog({
                 onChange={(e) =>
                   setLocal((prev) => ({ ...prev, minPrice: digits(e.target.value) }))
                 }
-                placeholder={filterMeta.minPrice ?? "Min"}
+                placeholder={rangePlaceholder(filterMeta.minPrice, "Min")}
                 className="h-10"
                 aria-label="Minimum price"
               />
@@ -121,7 +128,7 @@ export function OffPlanFiltersDialog({
                 onChange={(e) =>
                   setLocal((prev) => ({ ...prev, maxPrice: digits(e.target.value) }))
                 }
-                placeholder={filterMeta.maxPrice ?? "Max"}
+                placeholder={rangePlaceholder(filterMeta.maxPrice, "Max")}
                 className="h-10"
                 aria-label="Maximum price"
               />
@@ -136,7 +143,7 @@ export function OffPlanFiltersDialog({
                 onChange={(e) =>
                   setLocal((prev) => ({ ...prev, minArea: digits(e.target.value) }))
                 }
-                placeholder={filterMeta.minArea ?? "Min"}
+                placeholder={rangePlaceholder(filterMeta.minArea, "Min")}
                 className="h-10"
                 aria-label="Minimum area"
               />
@@ -146,7 +153,7 @@ export function OffPlanFiltersDialog({
                 onChange={(e) =>
                   setLocal((prev) => ({ ...prev, maxArea: digits(e.target.value) }))
                 }
-                placeholder={filterMeta.maxArea ?? "Max"}
+                placeholder={rangePlaceholder(filterMeta.maxArea, "Max")}
                 className="h-10"
                 aria-label="Maximum area"
               />

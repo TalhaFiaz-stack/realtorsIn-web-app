@@ -58,6 +58,14 @@ export function isProfilePath(pathname: string): boolean {
 }
 
 /** Left profile/options rail — Home-style pages + Network. */
+/**
+ * Listings map view (`/listings?view=map`) — the map needs the room, so it
+ * drops the left profile rail and uses an extra-wide main column.
+ */
+export function isListingsMapView(pathname: string, view: string | null | undefined): boolean {
+  return pathname === "/listings" && view === "map";
+}
+
 export function shouldShowLeftRail(pathname: string): boolean {
   return (
     LEFT_RAIL_PREFIXES.some(

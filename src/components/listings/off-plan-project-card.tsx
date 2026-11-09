@@ -5,7 +5,11 @@ import { Building2, MapPin } from "lucide-react";
 import { useBrokerGate } from "@/components/broker-verification/broker-gate-provider";
 import { RemoteImg } from "@/components/shared/remote-img";
 import { OffPlanProjectShareMenu } from "@/components/listings/off-plan-project-share-menu";
-import { formatOffPlanPrice } from "@/features/off-plan/lib/format-off-plan-price";
+import {
+  formatOffPlanPrice,
+  offPlanCommissionLabel,
+  offPlanHandoverLabel,
+} from "@/features/off-plan/lib/format-off-plan-price";
 import { OffPlanCardImageBadgesOverlay } from "@/components/listings/off-plan-card-image-badges-overlay";
 import { getOffPlanCardImageBadges } from "@/features/off-plan/lib/off-plan-card-image-badges";
 import { offPlanMarkerColors } from "@/features/off-plan/lib/off-plan-map-status-colors";
@@ -20,6 +24,7 @@ export function OffPlanProjectCard({ project }: { project: OffPlanProjectSummary
   const locationLabel =
     project.location ?? (project.districtName ? project.districtName : null);
   const priceLabel = formatOffPlanPrice(project.priceStart, project.currency);
+  const commissionLabel = offPlanCommissionLabel(project.commissionPercentage);
 
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition hover:border-primary/35 hover:shadow-md">
@@ -70,12 +75,19 @@ export function OffPlanProjectCard({ project }: { project: OffPlanProjectSummary
               {priceLabel}
             </p>
           </div>
-          {project.totalProperties != null && project.totalProperties > 0 ? (
-            <span className="inline-flex shrink-0 items-center gap-1 rounded-md bg-white/95 px-2 py-1 text-[10px] font-semibold text-emerald-800 shadow-sm backdrop-blur-sm">
-              <Building2 className="h-3 w-3 shrink-0" aria-hidden />
-              {project.totalProperties.toLocaleString()} units
-            </span>
-          ) : null}
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            {commissionLabel ? (
+              <span className="inline-flex items-center rounded-md bg-amber-400 px-2 py-1 text-[10px] font-bold text-amber-950 shadow-sm">
+                {commissionLabel}
+              </span>
+            ) : null}
+            {project.totalProperties != null && project.totalProperties > 0 ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-white/95 px-2 py-1 text-[10px] font-semibold text-emerald-800 shadow-sm backdrop-blur-sm">
+                <Building2 className="h-3 w-3 shrink-0" aria-hidden />
+                {project.totalProperties.toLocaleString()} units
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -84,16 +96,14 @@ export function OffPlanProjectCard({ project }: { project: OffPlanProjectSummary
           <h3 className="locale-text line-clamp-2 min-w-0 flex-1 pe-2 text-[15px] font-semibold leading-snug text-foreground">
             {project.title}
           </h3>
-          {project.completionDate ? (
-            <div className="shrink-0 text-end leading-none tabular-nums">
-              <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/80">
-                Handover
-              </p>
-              <p className="mt-0.5 text-xs font-semibold tabular-nums text-foreground">
-                {project.completionDate}
-              </p>
-            </div>
-          ) : null}
+          <div className="shrink-0 text-end leading-none tabular-nums">
+            <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground/80">
+              Handover
+            </p>
+            <p className="mt-0.5 text-xs font-semibold tabular-nums text-foreground">
+              {offPlanHandoverLabel(project.completionDate)}
+            </p>
+          </div>
         </div>
 
         {project.developerName ? (

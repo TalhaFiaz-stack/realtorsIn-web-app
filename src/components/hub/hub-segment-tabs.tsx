@@ -32,9 +32,9 @@ export function HubSegmentTabs<T extends string>({
   gridClassName?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-3", className)}>
+    <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-2 sm:flex-nowrap", className)}>
       <div
-        className="-my-1 flex min-w-0 flex-1 gap-2 overflow-x-auto py-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="-my-1 flex min-w-0 flex-1 basis-full gap-2 overflow-x-auto py-1 sm:basis-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         role="tablist"
         aria-label={ariaLabel}
       >
@@ -60,7 +60,8 @@ export function HubSegmentTabs<T extends string>({
           );
         })}
       </div>
-      {trailing ? <div className="shrink-0">{trailing}</div> : null}
+      {/* Phones: tabs keep the full row; trailing controls wrap below, end-aligned. */}
+      {trailing ? <div className="ms-auto shrink-0">{trailing}</div> : null}
     </div>
   );
 }
