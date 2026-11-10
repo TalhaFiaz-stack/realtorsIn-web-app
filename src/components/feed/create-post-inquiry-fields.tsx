@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Search } from "lucide-react";
 import type { InquiryDraft } from "@/features/feed/hooks/use-create-post";
+import { PropertyLocationSearch } from "@/components/properties/property-location-search";
 import { cn } from "@/lib/utils";
 
 const PURPOSE_OPTIONS = [
@@ -179,12 +180,23 @@ export function CreatePostInquiryFields({
 
       <div>
         <FieldLabel required>Preferred Location</FieldLabel>
-        <input
-          className={fieldClassName()}
-          placeholder="Community or building..."
+        <PropertyLocationSearch
           value={value.location}
+          placeholder="Search community or building..."
           disabled={disabled}
-          onChange={(e) => patch({ location: e.target.value })}
+          onChange={(sel) =>
+            patch(
+              sel
+                ? {
+                    location: sel.label,
+                    latLong: sel.latLong,
+                    city: sel.city,
+                    community: sel.community,
+                    subCommunity: sel.subCommunity,
+                  }
+                : { location: "", latLong: "", city: "", community: "", subCommunity: "" }
+            )
+          }
         />
       </div>
 

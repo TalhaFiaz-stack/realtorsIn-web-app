@@ -105,6 +105,8 @@ export function mapEvent(raw: unknown): SocialEvent | null {
     address: typeof e.address === "string" ? e.address : null,
     city: typeof e.city === "string" ? e.city : null,
     country: typeof e.country === "string" ? e.country : null,
+    latitude: e.latitude != null && e.latitude !== "" ? String(e.latitude) : null,
+    longitude: e.longitude != null && e.longitude !== "" ? String(e.longitude) : null,
     onlineUrl: typeof e.online_url === "string" ? e.online_url : null,
     capacity: e.capacity != null ? Number(e.capacity) : null,
     goingCount: Number(e.going_count) || 0,

@@ -10,6 +10,26 @@ import {
 import type { Messaging } from "firebase/messaging";
 
 const TOKEN_STORAGE_KEY = "rin.webPushToken";
+/** Set only when the member turns browser notifications off in Settings. */
+const OPT_OUT_STORAGE_KEY = "rin.webPushOptOut";
+
+function setOptOut(value: boolean) {
+  try {
+    if (value) window.localStorage.setItem(OPT_OUT_STORAGE_KEY, "1");
+    else window.localStorage.removeItem(OPT_OUT_STORAGE_KEY);
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** True when the member switched web push off themselves (not just signed out). */
+export function isWebPushOptedOut(): boolean {
+  try {
+    return window.localStorage.getItem(OPT_OUT_STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
 
 function readStoredToken(): string | null {
   try {
@@ -87,13 +107,17 @@ export async function syncWebPushToken(): Promise<string> {
 /** Ask for permission (must run from a click), then register. */
 export async function enableWebPush(): Promise<NotificationPermission> {
   const permission = await Notification.requestPermission();
-  if (permission === "granted") await syncWebPushToken();
+  if (permission === "granted") {
+    setOptOut(false);
+    await syncWebPushToken();
+  }
   return permission;
 }
 
 /** Turn browser push off: drop the FCM token and clear it on the profile. */
 export async function disableWebPush(): Promise<void> {
   const token = readStoredToken();
+  setOptOut(true);
   try {
     const [{ deleteToken }, messaging] = await Promise.all([
       import("firebase/messaging"),

@@ -22,6 +22,8 @@ const serverSchema = baseSchema.extend({
   }),
   REM_CRM_API_URL: z.string().url().optional(),
   OFFPLAN_API_URL: z.string().url().optional(),
+  /** Shared with SocialProfileREM; lets the backend trust visitor IP/browser/platform headers. */
+  BFF_SHARED_SECRET: z.string().min(16).optional(),
 });
 
 export type AppEnv = z.infer<typeof serverSchema>;
@@ -37,6 +39,7 @@ function readRawEnv() {
     SOCIAL_API_URL: process.env.SOCIAL_API_URL,
     REM_CRM_API_URL: process.env.REM_CRM_API_URL,
     OFFPLAN_API_URL: process.env.OFFPLAN_API_URL,
+    BFF_SHARED_SECRET: process.env.BFF_SHARED_SECRET || undefined,
     AUTH_COOKIE_NAME: process.env.AUTH_COOKIE_NAME,
     SESSION_COOKIE_SECURE: process.env.SESSION_COOKIE_SECURE,
     SESSION_COOKIE_MAX_AGE: process.env.SESSION_COOKIE_MAX_AGE,

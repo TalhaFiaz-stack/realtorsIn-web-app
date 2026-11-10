@@ -50,7 +50,8 @@ const nextConfig: NextConfig = {
   },
   /** Public API host for relative story/static paths (same host as SOCIAL_API_URL). */
   env: {
-    NEXT_PUBLIC_SOCIAL_FILES_BASE_URL: process.env.SOCIAL_API_URL ?? "",
+    NEXT_PUBLIC_SOCIAL_FILES_BASE_URL:
+      process.env.NEXT_PUBLIC_SOCIAL_FILES_BASE_URL || process.env.SOCIAL_API_URL || "",
   },
   turbopack: {
     root: path.join(__dirname),

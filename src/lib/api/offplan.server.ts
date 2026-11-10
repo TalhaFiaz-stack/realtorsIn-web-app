@@ -32,10 +32,12 @@ async function offplanRequestOnce<T>(
   token: string | null
 ): Promise<T> {
   const { path, method = "GET", data, auth = true, signal } = options;
+  // No `device` header: "1" means Android to REM, which counted web traffic
+  // as Android. Mark the client as web instead.
   const headers: Record<string, string> = {
     Accept: "application/json",
     locale: "en",
-    device: "1",
+    "x-client-platform": "web",
   };
   if (auth && token) {
     headers.Authorization = `Bearer ${token}`;

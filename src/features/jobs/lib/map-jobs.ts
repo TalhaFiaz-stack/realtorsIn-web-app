@@ -1,3 +1,4 @@
+import { resolveMediaUrl } from "@/lib/media/resolve-media-url";
 import type {
   JobApplication,
   JobApplicant,
@@ -22,7 +23,7 @@ function mapPoster(raw: unknown): JobPoster | null {
     lastName: typeof p.last_name === "string" ? p.last_name : null,
     userName: typeof p.user_name === "string" ? p.user_name : null,
     profilePicture:
-      typeof p.profile_picture === "string" ? p.profile_picture : null,
+      resolveMediaUrl(p.profile_picture),
   };
 }
 
@@ -47,7 +48,7 @@ function mapApplicant(raw: unknown): JobApplicant | null {
     lastName: typeof a.last_name === "string" ? a.last_name : null,
     userName: typeof a.user_name === "string" ? a.user_name : null,
     profilePicture:
-      typeof a.profile_picture === "string" ? a.profile_picture : null,
+      resolveMediaUrl(a.profile_picture),
     userRole: typeof a.user_role === "string" ? a.user_role : null,
   };
 }
@@ -81,10 +82,14 @@ function normalizeImages(raw: unknown): { url: string }[] {
   if (!Array.isArray(raw)) return [];
   return raw
     .map((item) => {
-      if (typeof item === "string") return { url: item };
+      // Backend can return bare paths ("realtorsin/jobs/…") — make them loadable.
+      if (typeof item === "string") {
+        const url = resolveMediaUrl(item);
+        return url ? { url } : null;
+      }
       if (item && typeof item === "object" && "url" in item) {
-        const url = (item as { url?: unknown }).url;
-        return typeof url === "string" ? { url } : null;
+        const url = resolveMediaUrl((item as { url?: unknown }).url);
+        return url ? { url } : null;
       }
       return null;
     })

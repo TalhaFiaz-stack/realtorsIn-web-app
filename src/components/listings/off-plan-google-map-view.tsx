@@ -7,6 +7,7 @@ import {
   Polygon,
   useJsApiLoader,
 } from "@react-google-maps/api";
+import { GOOGLE_MAPS_LIBRARIES, GOOGLE_MAPS_LOADER_ID } from "@/lib/maps/google-maps-loader";
 import "./off-plan-map.css";
 import { OffPlanMapTopStart } from "@/components/listings/off-plan-map-legend";
 import { OffPlanMapPopupCard } from "@/components/listings/off-plan-map-popup-card";
@@ -322,8 +323,9 @@ export function OffPlanGoogleMapView({
   const [mapInstance, setMapInstance] = useState<google.maps.Map | null>(null);
 
   const { isLoaded, loadError } = useJsApiLoader({
-    id: "realtorsin-google-maps",
+    id: GOOGLE_MAPS_LOADER_ID,
     googleMapsApiKey: apiKey,
+    libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
   if (loadError) {

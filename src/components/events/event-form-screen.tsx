@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { EventLocationInput } from "@/components/events/event-location-input";
 import { ShellBackLink } from "@/components/navigation/shell-back-link";
 import { ShellBackRow } from "@/components/navigation/shell-back-row";
 import { ImagePlus, X } from "lucide-react";
@@ -121,6 +122,8 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
       address: event.address ?? "",
       city: event.city ?? "",
       country: event.country ?? "",
+      latitude: event.latitude ?? "",
+      longitude: event.longitude ?? "",
       online_url: event.onlineUrl ?? "",
       capacity: event.capacity != null ? String(event.capacity) : "",
       contact_email: "",
@@ -175,9 +178,14 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
     await submit("published");
   }
 
+  // Mobile EventFormFields: location for in-person / hybrid, link for online / hybrid.
+  const showLocationFields = values.event_type === "in_person" || values.event_type === "hybrid";
+  const showOnlineField = values.event_type === "online" || values.event_type === "hybrid";
+
   async function submit(status: "draft" | "published") {
     const parsed = eventFormSchema.safeParse({
       ...values,
+      ...(showOnlineField ? {} : { online_url: "" }),
       start_at: fromLocalInput(values.start_at) || values.start_at,
       end_at: fromLocalInput(values.end_at) || values.end_at,
     });
@@ -191,11 +199,16 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
 
     const payload = {
       ...values,
+      // Don't send fields the chosen format hides (e.g. an old venue on an online event).
+      ...(showLocationFields
+        ? {}
+        : { venue_name: "", address: "", city: "", country: "", latitude: "", longitude: "" }),
+      ...(showOnlineField ? {} : { online_url: "" }),
       start_at: fromLocalInput(values.start_at) || values.start_at,
       end_at: fromLocalInput(values.end_at) || values.end_at,
       status,
     };
-    const form = buildEventFormData(payload, images);
+    const form = buildEventFormData(payload, images, [], { isUpdate: isEdit });
 
     try {
       if (isEdit && eventId) {
@@ -320,32 +333,70 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
             />
           </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        {showLocationFields ? (
+          <div className="space-y-4 rounded-xl border border-border/70 bg-muted/20 p-4">
+            <div className="space-y-2">
+              <Label htmlFor="venue">Venue name</Label>
+              <Input
+                id="venue"
+                value={values.venue_name}
+                onChange={(e) => setField("venue_name", e.target.value)}
+                placeholder="Building or venue name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="event-location">
+                Event location<span className="ms-0.5 text-destructive">*</span>
+              </Label>
+              <EventLocationInput
+                id="event-location"
+                value={values.address}
+                onTextChange={(text) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    address: text,
+                    // Typed text without a pick has no reliable coordinates.
+                    ...(text.trim() ? {} : { latitude: "", longitude: "", city: "" }),
+                  }))
+                }
+                onPlaceSelect={(place) =>
+                  setValues((prev) => ({
+                    ...prev,
+                    address: place.address,
+                    latitude: place.latitude,
+                    longitude: place.longitude,
+                    city: place.city || prev.city,
+                    country: place.country || prev.country,
+                  }))
+                }
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="city">City</Label>
+              <Input
+                id="city"
+                value={values.city}
+                onChange={(e) => setField("city", e.target.value)}
+                placeholder="City"
+              />
+            </div>
+          </div>
+        ) : null}
+        {showOnlineField ? (
           <div className="space-y-2">
-            <Label htmlFor="venue">Venue</Label>
+            <Label htmlFor="online">
+              Online meeting link<span className="ms-0.5 text-destructive">*</span>
+            </Label>
             <Input
-              id="venue"
-              value={values.venue_name}
-              onChange={(e) => setField("venue_name", e.target.value)}
+              id="online"
+              type="url"
+              inputMode="url"
+              value={values.online_url}
+              onChange={(e) => setField("online_url", e.target.value)}
+              placeholder="https://zoom.us/..."
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="city">City</Label>
-            <Input
-              id="city"
-              value={values.city}
-              onChange={(e) => setField("city", e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="online">Online URL</Label>
-          <Input
-            id="online"
-            value={values.online_url}
-            onChange={(e) => setField("online_url", e.target.value)}
-          />
-        </div>
+        ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>Visibility</Label>

@@ -6,7 +6,10 @@ import { Building2, Loader2, Search, X } from "lucide-react";
 import { RemoteImg } from "@/components/shared/remote-img";
 import { Input } from "@/components/ui/input";
 import type { OffPlanShareChoice } from "@/features/feed/hooks/use-create-post";
-import { fetchOffPlanSearchSuggestionsClient } from "@/features/off-plan/services/off-plan.client";
+import {
+  fetchOffPlanFeedSectionsClient,
+  fetchOffPlanSearchSuggestionsClient,
+} from "@/features/off-plan/services/off-plan.client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,25 +33,48 @@ export function CreatePostOffPlanPicker({
     return () => window.clearTimeout(t);
   }, [text]);
 
-  const query = useQuery({
+  /** The server only searches from 2 characters — below that, don't call it. */
+  const searching = debounced.length >= 2;
+
+  const searchQuery = useQuery({
     queryKey: ["off-plan", "compose-picker", debounced],
     queryFn: ({ signal }) => fetchOffPlanSearchSuggestionsClient(debounced, signal),
-    enabled: !value,
+    enabled: !value && searching,
     staleTime: 60_000,
   });
 
-  const sections = query.data?.sections;
-  const results = (debounced ? sections?.projects : sections?.featuredProjects?.length ? sections.featuredProjects : sections?.projects) ?? [];
-  const choices: OffPlanShareChoice[] = results
-    .filter((r) => r.id != null && String(r.id).trim())
-    .slice(0, 8)
-    .map((r) => ({
-      id: String(r.id),
-      label: r.label,
-      subtitle: r.subtitle,
-      imageUrl: r.imageUrl,
-      developerName: r.developerName,
-    }));
+  // Before typing: show "Top Picks" (same lightweight feed endpoint as the
+  // home feed's off-plan row) instead of an empty search.
+  const topQuery = useQuery({
+    queryKey: ["off-plan", "compose-picker-top"],
+    queryFn: ({ signal }) =>
+      fetchOffPlanFeedSectionsClient(null, signal).then((res) => res.sections ?? []),
+    enabled: !value && !searching,
+    staleTime: 10 * 60_000,
+  });
+
+  const query = searching ? searchQuery : topQuery;
+
+  const choices: OffPlanShareChoice[] = searching
+    ? (searchQuery.data?.sections?.projects ?? [])
+        .filter((r) => r.id != null && String(r.id).trim())
+        .slice(0, 8)
+        .map((r) => ({
+          id: String(r.id),
+          label: r.label,
+          subtitle: r.subtitle,
+          imageUrl: r.imageUrl,
+          developerName: r.developerName,
+        }))
+    : (topQuery.data?.find((section) => section.key === "top_overall")?.projects ?? [])
+        .slice(0, 8)
+        .map((p) => ({
+          id: p.id,
+          label: p.title,
+          subtitle: p.location ?? p.districtName ?? undefined,
+          imageUrl: p.bannerImage ?? undefined,
+          developerName: p.developerName ?? undefined,
+        }));
 
   if (value) {
     return (
@@ -83,7 +109,9 @@ export function CreatePostOffPlanPicker({
 
   return (
     <div className="space-y-2 rounded-xl border border-border bg-muted/20 p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Choose a project to share</p>
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {searching ? "Search results" : "Top picks — or search for any project"}
+      </p>
       <div className="relative">
         <Search className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden />
         <Input
@@ -110,7 +138,11 @@ export function CreatePostOffPlanPicker({
           </p>
         ) : choices.length === 0 ? (
           <p className="px-1 py-3 text-sm text-muted-foreground">
-            {debounced ? `No projects match “${debounced}”.` : "Type to search off-plan projects."}
+            {searching
+              ? `No projects match “${debounced}”.`
+              : debounced
+                ? "Keep typing — at least 2 characters."
+                : "Type to search off-plan projects."}
           </p>
         ) : (
           choices.map((choice) => (

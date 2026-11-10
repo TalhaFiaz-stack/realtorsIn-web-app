@@ -17,6 +17,7 @@ import type {
   CreatePreviewFile,
   PropertyDraft,
 } from "@/features/feed/hooks/use-create-post";
+import { PropertyLocationSearch } from "@/components/properties/property-location-search";
 import { cn } from "@/lib/utils";
 
 function FieldLabel({
@@ -215,12 +216,23 @@ export function CreatePostPropertyFields({
 
       <div>
         <FieldLabel required>Location</FieldLabel>
-        <input
-          className={fieldClassName()}
-          placeholder="Search for a location..."
+        <PropertyLocationSearch
           value={value.location}
+          placeholder="Search for a location..."
           disabled={disabled}
-          onChange={(e) => patch({ location: e.target.value })}
+          onChange={(sel) =>
+            patch(
+              sel
+                ? {
+                    location: sel.label,
+                    latLong: sel.latLong,
+                    city: sel.city,
+                    community: sel.community,
+                    subCommunity: sel.subCommunity,
+                  }
+                : { location: "", latLong: "", city: "", community: "", subCommunity: "" }
+            )
+          }
         />
       </div>
 

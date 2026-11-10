@@ -87,13 +87,34 @@ export function appendEventImages(
   form.append("image_order", JSON.stringify(imageOrder));
 }
 
+/**
+ * Location / link fields a format change can clear. On update the backend
+ * keeps any field that isn't sent, so a cleared value must be sent as "".
+ */
+const CLEARABLE_ON_UPDATE = [
+  "venue_name",
+  "address",
+  "city",
+  "country",
+  "latitude",
+  "longitude",
+  "online_url",
+] as const;
+
 export function buildEventFormData(
   payload: EventFormPayload,
   images: EventFormImage[],
-  newFiles: File[] = []
+  newFiles: File[] = [],
+  options: { isUpdate?: boolean } = {}
 ): FormData {
   const form = new FormData();
   appendEventScalars(form, payload);
+  if (options.isUpdate) {
+    for (const field of CLEARABLE_ON_UPDATE) {
+      const value = payload[field as keyof EventFormPayload];
+      if (value == null || String(value).trim() === "") form.append(field, "");
+    }
+  }
   appendEventImages(form, images, newFiles);
   return form;
 }

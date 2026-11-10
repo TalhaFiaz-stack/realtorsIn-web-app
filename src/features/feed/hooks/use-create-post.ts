@@ -42,6 +42,11 @@ export type InquiryDraft = {
   propertyType: string;
   purpose: string;
   location: string;
+  /** Algolia location details (mobile parity) — sent as lat_long / city / community / sub_community. */
+  latLong: string;
+  city: string;
+  community: string;
+  subCommunity: string;
   bedrooms: string;
   furnishing: string;
   notes: string;
@@ -55,6 +60,11 @@ export type PropertyDraft = {
   propertyType: string;
   status: string;
   location: string;
+  /** Algolia location details (mobile parity) — sent as lat_long / city / community / sub_community. */
+  latLong: string;
+  city: string;
+  community: string;
+  subCommunity: string;
   purpose: string;
   furnishing: string;
   bedrooms: string;
@@ -74,6 +84,10 @@ const EMPTY_INQUIRY: InquiryDraft = {
   propertyType: "",
   purpose: "",
   location: "",
+  latLong: "",
+  city: "",
+  community: "",
+  subCommunity: "",
   bedrooms: "",
   furnishing: "",
   notes: "",
@@ -86,6 +100,10 @@ const EMPTY_PROPERTY: PropertyDraft = {
   propertyType: "",
   status: "1",
   location: "",
+  latLong: "",
+  city: "",
+  community: "",
+  subCommunity: "",
   purpose: "",
   furnishing: "",
   bedrooms: "",
@@ -93,6 +111,17 @@ const EMPTY_PROPERTY: PropertyDraft = {
   price: "",
   unitSize: "",
 };
+
+/** Same extra location fields mobile CreatePost sends with an Algolia pick. */
+function appendLocationDetails(
+  form: FormData,
+  draft: { latLong: string; city: string; community: string; subCommunity: string }
+) {
+  if (draft.latLong.trim()) form.append("lat_long", draft.latLong.trim());
+  if (draft.city.trim()) form.append("city", draft.city.trim());
+  if (draft.community.trim()) form.append("community", draft.community.trim());
+  if (draft.subCommunity.trim()) form.append("sub_community", draft.subCommunity.trim());
+}
 
 function isInquiryValid(inquiry: InquiryDraft): boolean {
   return (
@@ -323,6 +352,7 @@ export function useCreatePost(options?: {
         form.append("property_type", inquiry.propertyType.trim());
         form.append("type", inquiry.purpose.trim());
         form.append("location", inquiry.location.trim());
+        appendLocationDetails(form, inquiry);
         if (inquiry.bedrooms) form.append("bedrooms", inquiry.bedrooms);
         if (inquiry.furnishing) {
           form.append("well_furnished", inquiry.furnishing);
@@ -340,6 +370,7 @@ export function useCreatePost(options?: {
         form.append("category", property.category.trim());
         form.append("availability", property.status || "1");
         form.append("location", property.location.trim());
+        appendLocationDetails(form, property);
         form.append("type", property.purpose.trim());
         form.append("well_furnished", property.furnishing || "0");
         form.append("bedrooms", property.bedrooms);

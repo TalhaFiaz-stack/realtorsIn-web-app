@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Bookmark } from "lucide-react";
 import { PostCard } from "@/components/feed/post-card";
+import { PostReactionsDialog } from "@/components/feed/post-reactions-dialog";
 import { PostCommentsDialog } from "@/components/feed/post-comments-dialog";
 import {
   ActivityFeedPostSkeleton,
@@ -49,6 +50,7 @@ export function ActivityPostsScreen({
   const likeMutation = useToggleLike();
   const saveMutation = useToggleSave();
   const [commentsPostId, setCommentsPostId] = useState<number | null>(null);
+  const [reactionsPostId, setReactionsPostId] = useState<number | null>(null);
   const viewerName =
     profile?.fullName || profile?.name || profile?.userName || "Member";
   const viewerAvatarUrl = profile?.profileImage?.url ?? null;
@@ -140,11 +142,20 @@ export function ActivityPostsScreen({
             }
             onReport={() => {}}
             onComment={setCommentsPostId}
+            onReactions={setReactionsPostId}
+            reactionPickerPortal
           />
         ))}
         {query.isFetchingNextPage ? <ActivityFeedPostSkeleton /> : null}
         <div ref={sentinelRef} className="h-px w-full" aria-hidden />
       </div>
+      <PostReactionsDialog
+        postId={reactionsPostId}
+        open={reactionsPostId != null}
+        onOpenChange={(open) => {
+          if (!open) setReactionsPostId(null);
+        }}
+      />
       <PostCommentsDialog
         postId={commentsPostId}
         open={commentsPostId != null}

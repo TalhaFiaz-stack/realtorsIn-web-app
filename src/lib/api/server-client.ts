@@ -5,6 +5,7 @@ import { getEnv } from "@/lib/env";
 import { getSessionToken, clearSessionCookie } from "@/lib/auth/session";
 import { ApiError, mapHttpStatusToCode, toApiError } from "@/lib/api/errors";
 import { getRequestLocale } from "@/features/localization/server/locale.server";
+import { getClientContextHeaders } from "@/lib/api/client-context.server";
 
 const DEFAULT_TIMEOUT_MS = 20_000;
 
@@ -88,7 +89,11 @@ export async function socialApiRequest<T>(
   } = options;
 
   const client = createBaseClient();
-  const requestHeaders: Record<string, string> = { ...headers };
+  // Visitor IP / browser / platform for backend analytics (see client-context.server.ts).
+  const requestHeaders: Record<string, string> = {
+    ...(await getClientContextHeaders()),
+    ...headers,
+  };
 
   if (!isFormData && !(data instanceof FormData)) {
     requestHeaders["Content-Type"] =

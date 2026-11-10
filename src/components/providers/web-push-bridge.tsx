@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   getWebMessaging,
-  hasStoredWebPushToken,
+  isWebPushOptedOut,
   isWebPushSupported,
   syncWebPushToken,
 } from "@/features/push/services/web-push.client";
@@ -39,7 +39,10 @@ export function WebPushBridge() {
 
     void (async () => {
       if (!(await isWebPushSupported())) return;
-      if (Notification.permission !== "granted" || !hasStoredWebPushToken()) return;
+      // Mobile parity: once the browser allows notifications, register this
+      // browser on every sign-in (logout clears the stored token) — unless
+      // the member switched web push off in Settings.
+      if (Notification.permission !== "granted" || isWebPushOptedOut()) return;
       try {
         await syncWebPushToken();
         const [{ onMessage }, messaging] = await Promise.all([

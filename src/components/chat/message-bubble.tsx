@@ -1,5 +1,6 @@
 "use client";
 
+import { createContext, useContext, type ReactNode } from "react";
 import { Check, CheckCheck, Clock3, FileText } from "lucide-react";
 import { isOptimisticMessageId } from "@/features/chat/lib/create-optimistic-message";
 import { ChatImageGallery } from "@/components/chat/chat-image-gallery";
@@ -108,6 +109,29 @@ function BubbleShell({
   );
 }
 
+/** The message's options button (⋯), when it has one — rendered by BubbleRow. */
+const BubbleAsideContext = createContext<ReactNode>(null);
+
+/**
+ * Aligns a bubble to its side (own → right, theirs → left) and puts the
+ * options button right next to it on the outer side.
+ */
+function BubbleRow({ own, children }: { own: boolean; children: ReactNode }) {
+  const aside = useContext(BubbleAsideContext);
+  return (
+    <div
+      className={cn(
+        "flex w-full max-w-full items-center gap-1",
+        own ? "justify-end" : "justify-start"
+      )}
+    >
+      {own ? aside : null}
+      {children}
+      {own ? null : aside}
+    </div>
+  );
+}
+
 const SHARE_BUBBLE_WIDTH = "w-[18.75rem] max-w-[min(18.75rem,100%)]";
 
 function ShareBubble({
@@ -120,12 +144,7 @@ function ShareBubble({
   children: React.ReactNode;
 }) {
   return (
-    <div
-      className={cn(
-        "flex w-full max-w-full",
-        own ? "justify-end" : "justify-start"
-      )}
-    >
+    <BubbleRow own={own}>
       <div
         className={cn(
           SHARE_BUBBLE_WIDTH,
@@ -143,7 +162,7 @@ function ShareBubble({
           <Meta message={message} tone="neutral" />
         </div>
       </div>
-    </div>
+    </BubbleRow>
   );
 }
 
@@ -182,15 +201,13 @@ export function MessageBubble({
 
   return (
     <div className="group relative flex w-full max-w-full flex-col">
-      <div
-        className={cn(
-          "flex w-full items-center gap-1",
-          own ? "flex-row-reverse" : "flex-row"
-        )}
+      {/* The options button is placed inside each bubble's row (BubbleRow),
+          right beside the bubble — not at the far edge of the chat. */}
+      <BubbleAsideContext.Provider
+        value={canAct ? <MessageActionsMenu message={message} actions={actions} /> : null}
       >
-        <div className="min-w-0 flex-1">{bubble}</div>
-        {canAct ? <MessageActionsMenu message={message} actions={actions} /> : null}
-      </div>
+        {bubble}
+      </BubbleAsideContext.Provider>
       {message.isEdited ? (
         <span
           className={cn(
@@ -229,12 +246,7 @@ function MessageBubbleContent({
           : [];
 
     return (
-      <div
-        className={cn(
-          "flex w-full max-w-full",
-          own ? "justify-end" : "justify-start"
-        )}
-      >
+      <BubbleRow own={own}>
         <div
           className={cn(
             "w-fit max-w-[min(82%,22rem)] overflow-hidden",
@@ -253,18 +265,13 @@ function MessageBubbleContent({
             <Meta message={message} tone={own ? "own" : "peer"} />
           </div>
         </div>
-      </div>
+      </BubbleRow>
     );
   }
 
   if (message.messageType === "document" || message.documentUrl) {
     return (
-      <div
-        className={cn(
-          "flex w-full max-w-full",
-          own ? "justify-end" : "justify-start"
-        )}
-      >
+      <BubbleRow own={own}>
         <BubbleShell own={own}>
           <a
             href={message.documentUrl ?? "#"}
@@ -305,7 +312,7 @@ function MessageBubbleContent({
             <Meta message={message} tone={own ? "own" : "peer"} />
           </div>
         </BubbleShell>
-      </div>
+      </BubbleRow>
     );
   }
 
@@ -356,12 +363,7 @@ function MessageBubbleContent({
   }
 
   return (
-    <div
-      className={cn(
-        "flex w-full max-w-full",
-        own ? "justify-end" : "justify-start"
-      )}
-    >
+    <BubbleRow own={own}>
       <BubbleShell own={own}>
         <p className="whitespace-pre-wrap break-words [overflow-wrap:anywhere]">
           {message.content || " "}
@@ -370,6 +372,6 @@ function MessageBubbleContent({
           <Meta message={message} tone={own ? "own" : "peer"} />
         </div>
       </BubbleShell>
-    </div>
+    </BubbleRow>
   );
 }

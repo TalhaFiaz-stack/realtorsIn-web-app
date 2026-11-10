@@ -47,6 +47,8 @@ export type SocialEvent = {
   address: string | null;
   city: string | null;
   country: string | null;
+  latitude: string | null;
+  longitude: string | null;
   onlineUrl: string | null;
   capacity: number | null;
   goingCount: number;
