@@ -10,11 +10,12 @@ const hasPasswordCreds = Boolean(
 );
 
 test.describe("public smoke", () => {
-  test("welcome and health respond", async ({ page, request }) => {
+  test("root redirects to login and health responds", async ({ page, request }) => {
     const health = await request.get("/api/health");
     expect(health.ok()).toBeTruthy();
-    await page.goto("/welcome");
-    await expect(page).toHaveURL(/welcome/);
+    // The landing page and /welcome are switched off for now.
+    await page.goto("/");
+    await expect(page).toHaveURL(/login/);
   });
 
   test("protected feed redirects to login", async ({ page }) => {

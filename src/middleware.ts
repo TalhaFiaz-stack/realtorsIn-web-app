@@ -51,11 +51,20 @@ function startsWithAny(pathname: string, prefixes: string[]): boolean {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  if (
-    pathname.startsWith("/api/") ||
-    startsWithAny(pathname, PUBLIC_PREFIXES) ||
-    pathname === "/"
-  ) {
+  // The public landing page at "/" is switched off for now: like the admin
+  // panel, the root URL goes to the app (signed in) or to the login page.
+  // The /feed layout still validates the session, so a stale cookie ends up
+  // on /login — and /login never redirects away on cookie alone (no loop).
+  // To bring the landing page back, remove this block and re-add
+  // `|| pathname === "/"` to the pass-through check below.
+  if (pathname === "/") {
+    const target = request.nextUrl.clone();
+    target.pathname = hasSessionCookie(request) ? "/feed" : "/login";
+    target.search = "";
+    return NextResponse.redirect(target);
+  }
+
+  if (pathname.startsWith("/api/") || startsWithAny(pathname, PUBLIC_PREFIXES)) {
     return NextResponse.next();
   }
 

@@ -6,6 +6,7 @@ export const metadata = {
     "Connect with agents, brokers and developers, share listings, explore off-plan projects and close deals faster.",
 };
 
+// NOTE: not rendered for now — middleware redirects "/" to /login or /feed.
 export default function PublicHomePage() {
   return <LandingPage />;
 }

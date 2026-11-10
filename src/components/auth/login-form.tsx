@@ -3,7 +3,7 @@
 import { SocialSignIn } from "@/components/auth/social-sign-in";
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
+// import Link from "next/link"; // only used by the "Back to welcome" link (disabled)
 import { Mail, Phone, User } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -280,11 +280,13 @@ export function LoginForm() {
 
       <AuthSecurityNote />
 
+      {/* "Back to welcome" is off while the /welcome page is disabled.
       <p className="text-center text-sm text-muted-foreground">
         <Link href="/welcome" className="auth-link text-sm">
           Back to welcome
         </Link>
       </p>
+      */}
     </div>
   );
 }
