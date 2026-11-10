@@ -102,10 +102,35 @@ export function useDeleteStory() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (storyId: number) => deleteStoryRequest(storyId),
-    onSuccess: () => {
+    // Drop it from the rail/viewer at once (mobile parity); restore on failure.
+    onMutate: async (storyId) => {
+      await queryClient.cancelQueries({ queryKey: storiesFeedKey });
+      const previous = queryClient.getQueryData<StoriesFeed>(storiesFeedKey);
+      queryClient.setQueryData<StoriesFeed>(storiesFeedKey, (current) =>
+        current ? removeStoryFromFeed(current, storyId) : current
+      );
+      return { previous };
+    },
+    onError: (_error, _storyId, context) => {
+      if (context?.previous) queryClient.setQueryData(storiesFeedKey, context.previous);
+    },
+    onSettled: () => {
       void queryClient.invalidateQueries({ queryKey: storiesFeedKey });
     },
   });
+}
+
+/** Pure helper (exported for tests): remove one story; drop groups left empty. */
+export function removeStoryFromFeed(feed: StoriesFeed, storyId: number): StoriesFeed {
+  if (!feed.groups.some((group) => group.stories.some((s) => s.id === storyId))) return feed;
+  const groups = feed.groups
+    .map((group) => {
+      if (!group.stories.some((s) => s.id === storyId)) return group;
+      const stories = group.stories.filter((s) => s.id !== storyId);
+      return { ...group, stories, hasUnseen: stories.some((s) => !s.hasViewed) };
+    })
+    .filter((group) => group.stories.length > 0);
+  return { ...feed, groups };
 }
 
 export function storiesErrorMessage(error: unknown): string {

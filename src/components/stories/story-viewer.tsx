@@ -145,6 +145,27 @@ export function StoryViewer({
     viewedRef.current = new Set();
   }, [open, startUserId]);
 
+  // The list can shrink under the viewer (a delete, or a story expiring on
+  // refetch). Clamp to a valid story instead of rendering nothing while the
+  // overlay still holds the page scroll lock.
+  useEffect(() => {
+    if (!open) return;
+    if (ordered.length === 0) {
+      onClose();
+      return;
+    }
+    if (!group) {
+      setUserIndex(Math.min(userIndex, ordered.length - 1));
+      setStoryIndex(0);
+      setProgress(0);
+      return;
+    }
+    if (!story) {
+      setStoryIndex(Math.max(0, group.stories.length - 1));
+      setProgress(0);
+    }
+  }, [open, ordered.length, group, story, userIndex, onClose]);
+
   const playbackBlocked =
     paused || mediaLoading || userSliding || viewersOpen;
 
@@ -358,13 +379,33 @@ export function StoryViewer({
                         (story.mediaType === "video"
                           ? "Your video story"
                           : "Your photo story");
+                      // Hold playback while confirming, so the timer can't
+                      // move to another story behind the dialog.
+                      setPaused(true);
                       const ok = await confirm(confirmDeleteStory(preview));
+                      setPaused(false);
                       if (!ok) return;
+
+                      const { userIndex: ui, storyIndex: si } = navRef.current;
+                      const count = group.stories.length;
+                      // The feed cache drops the story immediately (onMutate),
+                      // so the next story slides into the same index.
+                      if (count <= 1) {
+                        onClose();
+                      } else if (si >= count - 1) {
+                        if (ui < orderedRef.current.length - 1) {
+                          setUserSlideDir(1);
+                          setUserSliding(true);
+                          setUserIndex(ui + 1);
+                          setStoryIndex(0);
+                        } else {
+                          onClose();
+                        }
+                      }
+                      setProgress(0);
+
                       remove.mutate(story.id, {
-                        onSuccess: () => {
-                          if (group.stories.length <= 1) onClose();
-                          else goNextRef.current();
-                        },
+                        onSuccess: () => showAppToast.success("Story deleted"),
                         onError: (err) =>
                           showAppToast.error("Couldn't delete story", storiesErrorMessage(err)),
                       });

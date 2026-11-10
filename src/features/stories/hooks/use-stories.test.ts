@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { markStoryViewedInFeed } from "@/features/stories/hooks/use-stories";
+import { markStoryViewedInFeed, removeStoryFromFeed } from "@/features/stories/hooks/use-stories";
 import type { StoriesFeed, StoryItem } from "@/features/stories/types/story.types";
 
 const story = (id: number, hasViewed: boolean): StoryItem => ({
@@ -42,5 +42,22 @@ describe("markStoryViewedInFeed", () => {
   it("returns the same object when nothing changes", () => {
     const viewed = markStoryViewedInFeed(feed, 20);
     expect(markStoryViewedInFeed(viewed, 20)).toBe(viewed);
+  });
+});
+
+describe("removeStoryFromFeed", () => {
+  it("removes the story and keeps the rest of the group", () => {
+    const next = removeStoryFromFeed(feed, 10);
+    expect(next.groups[0]!.stories.map((s) => s.id)).toEqual([11]);
+    expect(next.groups[1]).toBe(feed.groups[1]);
+  });
+
+  it("drops a group left with no stories", () => {
+    const next = removeStoryFromFeed(feed, 20);
+    expect(next.groups.map((g) => g.userId)).toEqual([1]);
+  });
+
+  it("returns the same object for an unknown story", () => {
+    expect(removeStoryFromFeed(feed, 999)).toBe(feed);
   });
 });
