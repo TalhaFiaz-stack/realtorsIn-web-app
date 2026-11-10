@@ -32,7 +32,11 @@ import type {
   EventFormImage,
   EventFormValues,
 } from "@/features/events/types/event.types";
-import { eventFormSchema } from "@/features/events/validators/event.validators";
+import {
+  createEventFormSchema,
+  eventFormErrors,
+  type EventFormErrors,
+} from "@/features/events/validators/event.validators";
 import { RemoteImg } from "@/components/shared/remote-img";
 import { showAppToast } from "@/lib/toast/app-toast";
 
@@ -151,6 +155,12 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
     value: EventFormValues[K]
   ) {
     setValues((prev) => ({ ...prev, [key]: value }));
+    clearError(key);
+  }
+
+  const [errors, setErrors] = useState<EventFormErrors>({});
+  function clearError(key: string) {
+    setErrors((prev) => (prev[key] ? { ...prev, [key]: undefined } : prev));
   }
 
   function onPickFiles(files: FileList | null) {
@@ -180,25 +190,37 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
     await submit("published");
   }
 
-  const [remHashError, setRemHashError] = useState<string | null>(null);
+  const [placesReady, setPlacesReady] = useState(false);
 
   // Mobile EventFormFields: location for in-person / hybrid, link for online / hybrid.
   const showLocationFields = values.event_type === "in_person" || values.event_type === "hybrid";
   const showOnlineField = values.event_type === "online" || values.event_type === "hybrid";
 
   async function submit(status: "draft" | "published") {
-    const parsed = eventFormSchema.safeParse({
+    const schema = createEventFormSchema({
+      requireFutureStart: !isEdit,
+      requirePickedLocation: placesReady && !isEdit,
+    });
+    const parsed = schema.safeParse({
       ...values,
       ...(showOnlineField ? {} : { online_url: "" }),
       start_at: fromLocalInput(values.start_at) || values.start_at,
       end_at: fromLocalInput(values.end_at) || values.end_at,
     });
     if (!parsed.success) {
-      const issue = parsed.error.issues[0];
-      if (issue?.path[0] === "rem_campaign_hash") setRemHashError(issue.message);
-      showAppToast.error("Check the form", issue?.message ?? "Invalid fields");
+      const next = eventFormErrors(parsed.error);
+      setErrors(next);
+      const first = Object.values(next).find(Boolean);
+      showAppToast.error("Please fix the highlighted fields", first ?? "Some fields are invalid");
+      const firstKey = Object.keys(next)[0];
+      if (firstKey) {
+        const el = document.getElementById(FIELD_IDS[firstKey] ?? "");
+        el?.scrollIntoView({ behavior: "smooth", block: "center" });
+        el?.focus({ preventScroll: true });
+      }
       return;
     }
+    setErrors({});
 
     const payload = {
       ...values,
@@ -262,21 +284,25 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
         onSubmit={(e) => e.preventDefault()}
       >
         <div className="space-y-2">
-          <Label htmlFor="title">Title</Label>
+          <Label htmlFor="title">Title<span className="ms-0.5 text-destructive">*</span></Label>
           <Input
             id="title"
             value={values.title}
+            aria-invalid={Boolean(errors.title)}
             onChange={(e) => setField("title", e.target.value)}
           />
+          <FieldError message={errors.title} />
         </div>
         <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
+          <Label htmlFor="description">Description<span className="ms-0.5 text-destructive">*</span></Label>
           <Textarea
             id="description"
             rows={5}
             value={values.description}
+            aria-invalid={Boolean(errors.description)}
             onChange={(e) => setField("description", e.target.value)}
           />
+          <FieldError message={errors.description} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -318,22 +344,26 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="start">Starts</Label>
+            <Label htmlFor="start">Starts<span className="ms-0.5 text-destructive">*</span></Label>
             <Input
               id="start"
               type="datetime-local"
               value={toLocalInput(values.start_at)}
+              aria-invalid={Boolean(errors.start_at)}
               onChange={(e) => setField("start_at", e.target.value)}
             />
+            <FieldError message={errors.start_at} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="end">Ends</Label>
+            <Label htmlFor="end">Ends<span className="ms-0.5 text-destructive">*</span></Label>
             <Input
               id="end"
               type="datetime-local"
               value={toLocalInput(values.end_at)}
+              aria-invalid={Boolean(errors.end_at)}
               onChange={(e) => setField("end_at", e.target.value)}
             />
+            <FieldError message={errors.end_at} />
           </div>
         </div>
         {showLocationFields ? (
@@ -343,9 +373,11 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
               <Input
                 id="venue"
                 value={values.venue_name}
+                aria-invalid={Boolean(errors.venue_name)}
                 onChange={(e) => setField("venue_name", e.target.value)}
                 placeholder="Building or venue name"
               />
+              <FieldError message={errors.venue_name} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="event-location">
@@ -354,15 +386,19 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
               <PlaceAutocompleteInput
                 id="event-location"
                 value={values.address}
-                onTextChange={(text) =>
+                onPlacesReady={setPlacesReady}
+                onTextChange={(text) => {
+                  clearError("address");
                   setValues((prev) => ({
                     ...prev,
                     address: text,
                     // Typed text without a pick has no reliable coordinates.
                     ...(text.trim() ? {} : { latitude: "", longitude: "", city: "" }),
-                  }))
-                }
-                onPlaceSelect={(place) =>
+                  }));
+                }}
+                onPlaceSelect={(place) => {
+                  clearError("address");
+                  clearError("city");
                   setValues((prev) => ({
                     ...prev,
                     address: place.address,
@@ -370,18 +406,21 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
                     longitude: place.longitude,
                     city: place.city || prev.city,
                     country: place.country || prev.country,
-                  }))
-                }
+                  }));
+                }}
               />
+              <FieldError message={errors.address} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="city">City</Label>
+              <Label htmlFor="city">City<span className="ms-0.5 text-destructive">*</span></Label>
               <Input
                 id="city"
                 value={values.city}
+                aria-invalid={Boolean(errors.city)}
                 onChange={(e) => setField("city", e.target.value)}
                 placeholder="City"
               />
+              <FieldError message={errors.city} />
             </div>
           </div>
         ) : null}
@@ -395,9 +434,11 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
               type="url"
               inputMode="url"
               value={values.online_url}
+              aria-invalid={Boolean(errors.online_url)}
               onChange={(e) => setField("online_url", e.target.value)}
               placeholder="https://zoom.us/..."
             />
+            <FieldError message={errors.online_url} />
           </div>
         ) : null}
         <div className="grid gap-4 sm:grid-cols-2">
@@ -425,9 +466,11 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
               id="capacity"
               inputMode="numeric"
               value={values.capacity}
+              aria-invalid={Boolean(errors.capacity)}
               onChange={(e) => setField("capacity", e.target.value)}
               placeholder="e.g. 50 (optional)"
             />
+            <FieldError message={errors.capacity} />
           </div>
         </div>
         {/* Mobile EventFormFields: optional contact details for attendees. */}
@@ -440,9 +483,11 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
               inputMode="email"
               autoComplete="email"
               value={values.contact_email}
+              aria-invalid={Boolean(errors.contact_email)}
               onChange={(e) => setField("contact_email", e.target.value)}
               placeholder="Optional"
             />
+            <FieldError message={errors.contact_email} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="contact-phone">Contact phone</Label>
@@ -452,21 +497,22 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
               inputMode="tel"
               autoComplete="tel"
               value={values.contact_phone}
+              aria-invalid={Boolean(errors.contact_phone)}
               onChange={(e) => setField("contact_phone", e.target.value)}
               placeholder="Optional"
             />
+            <FieldError message={errors.contact_phone} />
           </div>
         </div>
         <EventRemLeadSync
           enabled={values.rem_lead_sync_enabled}
           hash={values.rem_campaign_hash}
-          error={remHashError}
+          error={errors.rem_campaign_hash}
           onEnabledChange={(v) => {
-            setRemHashError(null);
+            clearError("rem_campaign_hash");
             setField("rem_lead_sync_enabled", v);
           }}
           onHashChange={(v) => {
-            setRemHashError(null);
             setField("rem_campaign_hash", v);
           }}
         />
@@ -532,5 +578,30 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
         </div>
       </form>
     </div>
+  );
+}
+
+/** Form control id per validated field, for scrolling to the first error. */
+const FIELD_IDS: Record<string, string> = {
+  title: "title",
+  description: "description",
+  start_at: "start",
+  end_at: "end",
+  venue_name: "venue",
+  address: "event-location",
+  city: "city",
+  online_url: "online",
+  capacity: "capacity",
+  contact_email: "contact-email",
+  contact_phone: "contact-phone",
+  rem_campaign_hash: "rem-campaign-hash",
+};
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p role="alert" className="text-xs font-medium text-destructive">
+      {message}
+    </p>
   );
 }
