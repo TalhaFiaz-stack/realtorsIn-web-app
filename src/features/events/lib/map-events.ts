@@ -108,6 +108,12 @@ export function mapEvent(raw: unknown): SocialEvent | null {
     latitude: e.latitude != null && e.latitude !== "" ? String(e.latitude) : null,
     longitude: e.longitude != null && e.longitude !== "" ? String(e.longitude) : null,
     onlineUrl: typeof e.online_url === "string" ? e.online_url : null,
+    contactEmail: typeof e.contact_email === "string" && e.contact_email.trim() ? e.contact_email : null,
+    contactPhone: typeof e.contact_phone === "string" && e.contact_phone.trim() ? e.contact_phone : null,
+    remLeadSyncEnabled:
+      e.rem_lead_sync_enabled === true || e.rem_lead_sync_enabled === 1 || e.rem_lead_sync_enabled === "1",
+    remCampaignHash:
+      typeof e.rem_campaign_hash === "string" && e.rem_campaign_hash.trim() ? e.rem_campaign_hash : null,
     capacity: e.capacity != null ? Number(e.capacity) : null,
     goingCount: Number(e.going_count) || 0,
     interestedCount: Number(e.interested_count) || 0,

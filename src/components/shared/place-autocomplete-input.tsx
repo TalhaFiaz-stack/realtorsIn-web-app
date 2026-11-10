@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Autocomplete, useJsApiLoader } from "@react-google-maps/api";
 import { MapPin } from "lucide-react";
@@ -11,7 +11,7 @@ import {
   GOOGLE_MAPS_LOADER_ID,
 } from "@/lib/maps/google-maps-loader";
 
-export type EventPlace = {
+export type PlacePick = {
   address: string;
   city: string;
   country: string;
@@ -30,20 +30,25 @@ function component(
 }
 
 /**
- * Event address with Google Places autocomplete — mobile `EventFormFields`
- * uses the same Places search and fills city / country / coordinates.
- * Falls back to a plain text field if Maps can't load.
+ * Address / place search with Google Places autocomplete — same as mobile
+ * `LocationInput` (events, jobs). Fills address, city, country and
+ * coordinates. Falls back to a plain text field if Maps can't load;
+ * `onPlacesReady` tells the parent whether suggestions are available.
  */
-export function EventLocationInput({
+export function PlaceAutocompleteInput({
   value,
   onTextChange,
   onPlaceSelect,
+  onPlacesReady,
   id,
+  placeholder = "Search address or place",
 }: {
   value: string;
   onTextChange: (text: string) => void;
-  onPlaceSelect: (place: EventPlace) => void;
+  onPlaceSelect: (place: PlacePick) => void;
+  onPlacesReady?: (ready: boolean) => void;
   id?: string;
+  placeholder?: string;
 }) {
   const keyQuery = useQuery({
     queryKey: ["google-maps", "key"],
@@ -63,7 +68,7 @@ export function EventLocationInput({
         className="ps-9"
         value={value}
         onChange={(e) => onTextChange(e.target.value)}
-        placeholder="Search address or place"
+        placeholder={placeholder}
         autoComplete="off"
       />
     </div>
@@ -71,7 +76,7 @@ export function EventLocationInput({
 
   if (!apiKey) return input;
   return (
-    <PlacesAutocomplete apiKey={apiKey} onPlaceSelect={onPlaceSelect}>
+    <PlacesAutocomplete apiKey={apiKey} onPlaceSelect={onPlaceSelect} onPlacesReady={onPlacesReady}>
       {input}
     </PlacesAutocomplete>
   );
@@ -80,10 +85,12 @@ export function EventLocationInput({
 function PlacesAutocomplete({
   apiKey,
   onPlaceSelect,
+  onPlacesReady,
   children,
 }: {
   apiKey: string;
-  onPlaceSelect: (place: EventPlace) => void;
+  onPlaceSelect: (place: PlacePick) => void;
+  onPlacesReady?: (ready: boolean) => void;
   children: React.ReactElement;
 }) {
   const ref = useRef<google.maps.places.Autocomplete | null>(null);
@@ -93,7 +100,12 @@ function PlacesAutocomplete({
     libraries: GOOGLE_MAPS_LIBRARIES,
   });
 
-  if (!isLoaded || loadError) return children;
+  const ready = isLoaded && !loadError;
+  useEffect(() => {
+    onPlacesReady?.(ready);
+  }, [ready, onPlacesReady]);
+
+  if (!ready) return children;
 
   return (
     <Autocomplete

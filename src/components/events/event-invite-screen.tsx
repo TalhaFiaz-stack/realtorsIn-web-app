@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { ShellBackLink } from "@/components/navigation/shell-back-link";
 import { ShellBackRow } from "@/components/navigation/shell-back-row";

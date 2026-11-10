@@ -50,6 +50,11 @@ export type SocialEvent = {
   latitude: string | null;
   longitude: string | null;
   onlineUrl: string | null;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  /** Host-only: REM CRM lead sync settings (null/false for other viewers). */
+  remLeadSyncEnabled: boolean;
+  remCampaignHash: string | null;
   capacity: number | null;
   goingCount: number;
   interestedCount: number;

@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { EventLocationInput } from "@/components/events/event-location-input";
+import { PlaceAutocompleteInput } from "@/components/shared/place-autocomplete-input";
+import { EventRemLeadSync } from "@/components/events/event-rem-lead-sync";
 import { ShellBackLink } from "@/components/navigation/shell-back-link";
 import { ShellBackRow } from "@/components/navigation/shell-back-row";
 import { ImagePlus, X } from "lucide-react";
@@ -18,7 +18,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import {
   DEFAULT_EVENT_TIMEZONE,
   EVENT_CATEGORIES,
@@ -126,8 +125,11 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
       longitude: event.longitude ?? "",
       online_url: event.onlineUrl ?? "",
       capacity: event.capacity != null ? String(event.capacity) : "",
-      contact_email: "",
-      contact_phone: "",
+      contact_email: event.contactEmail ?? "",
+      contact_phone: event.contactPhone ?? "",
+      // Keep the saved REM sync on edit (it used to reset to off).
+      rem_lead_sync_enabled: event.remLeadSyncEnabled,
+      rem_campaign_hash: event.remCampaignHash ?? "",
     };
   }, [detailQuery.data]);
 
@@ -178,6 +180,8 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
     await submit("published");
   }
 
+  const [remHashError, setRemHashError] = useState<string | null>(null);
+
   // Mobile EventFormFields: location for in-person / hybrid, link for online / hybrid.
   const showLocationFields = values.event_type === "in_person" || values.event_type === "hybrid";
   const showOnlineField = values.event_type === "online" || values.event_type === "hybrid";
@@ -190,10 +194,9 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
       end_at: fromLocalInput(values.end_at) || values.end_at,
     });
     if (!parsed.success) {
-      showAppToast.error(
-        "Check the form",
-        parsed.error.issues[0]?.message ?? "Invalid fields"
-      );
+      const issue = parsed.error.issues[0];
+      if (issue?.path[0] === "rem_campaign_hash") setRemHashError(issue.message);
+      showAppToast.error("Check the form", issue?.message ?? "Invalid fields");
       return;
     }
 
@@ -348,7 +351,7 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
               <Label htmlFor="event-location">
                 Event location<span className="ms-0.5 text-destructive">*</span>
               </Label>
-              <EventLocationInput
+              <PlaceAutocompleteInput
                 id="event-location"
                 value={values.address}
                 onTextChange={(text) =>
@@ -423,29 +426,50 @@ export function EventFormScreen({ eventId }: { eventId?: number }) {
               inputMode="numeric"
               value={values.capacity}
               onChange={(e) => setField("capacity", e.target.value)}
+              placeholder="e.g. 50 (optional)"
             />
           </div>
         </div>
-        <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
-          <Label htmlFor="rem-sync" className="cursor-pointer">
-            REM lead sync
-          </Label>
-          <Switch
-            id="rem-sync"
-            checked={values.rem_lead_sync_enabled}
-            onCheckedChange={(v) => setField("rem_lead_sync_enabled", v)}
-          />
-        </div>
-        {values.rem_lead_sync_enabled ? (
+        {/* Mobile EventFormFields: optional contact details for attendees. */}
+        <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="campaign">Campaign hash</Label>
+            <Label htmlFor="contact-email">Contact email</Label>
             <Input
-              id="campaign"
-              value={values.rem_campaign_hash}
-              onChange={(e) => setField("rem_campaign_hash", e.target.value)}
+              id="contact-email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              value={values.contact_email}
+              onChange={(e) => setField("contact_email", e.target.value)}
+              placeholder="Optional"
             />
           </div>
-        ) : null}
+          <div className="space-y-2">
+            <Label htmlFor="contact-phone">Contact phone</Label>
+            <Input
+              id="contact-phone"
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              value={values.contact_phone}
+              onChange={(e) => setField("contact_phone", e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+        </div>
+        <EventRemLeadSync
+          enabled={values.rem_lead_sync_enabled}
+          hash={values.rem_campaign_hash}
+          error={remHashError}
+          onEnabledChange={(v) => {
+            setRemHashError(null);
+            setField("rem_lead_sync_enabled", v);
+          }}
+          onHashChange={(v) => {
+            setRemHashError(null);
+            setField("rem_campaign_hash", v);
+          }}
+        />
 
         <div className="space-y-2">
           <Label>Photos ({images.length}/{MAX_EVENT_IMAGES})</Label>

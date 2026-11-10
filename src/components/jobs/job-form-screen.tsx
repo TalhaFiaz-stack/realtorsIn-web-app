@@ -33,6 +33,7 @@ import { useSkillsCatalog } from "@/features/jobs/hooks/use-skills-catalog";
 import { buildJobFormData } from "@/features/jobs/lib/build-job-form-data";
 import type { JobFormImage, JobFormValues } from "@/features/jobs/types/job-form.types";
 import { RemoteImg } from "@/components/shared/remote-img";
+import { PlaceAutocompleteInput } from "@/components/shared/place-autocomplete-input";
 import { showAppToast } from "@/lib/toast/app-toast";
 
 const EMPTY: JobFormValues = {
@@ -153,6 +154,8 @@ export function JobFormScreen({ jobId }: { jobId?: number }) {
     setImages((prev) => prev.filter((img) => img.key !== key));
   }
 
+  const [placesReady, setPlacesReady] = useState(false);
+
   async function submit() {
     const needsLocation = values.jobType !== "Remote";
     if (!values.title.trim()) {
@@ -164,7 +167,12 @@ export function JobFormScreen({ jobId }: { jobId?: number }) {
       return;
     }
     if (needsLocation && !values.location.trim()) {
-      showAppToast.error("Job location is required for on-site roles");
+      showAppToast.error("Job location is required");
+      return;
+    }
+    // Mobile: a new job's location must come from the suggestions (sends lat_lng).
+    if (needsLocation && !isEdit && placesReady && !values.latLng.trim()) {
+      showAppToast.error("Please select the job location from the suggestions list");
       return;
     }
 
@@ -307,23 +315,38 @@ export function JobFormScreen({ jobId }: { jobId?: number }) {
             </Select>
           </div>
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="job-company">Company</Label>
-          <Input
-            id="job-company"
-            value={values.company}
-            onChange={(e) => setField("company", e.target.value)}
-          />
-        </div>
+        {/* Mobile CreateJobBottomSheet: no Company field — an existing company is
+            kept on edit. Location is a Places search (required unless Remote). */}
         <div className="space-y-2">
           <Label htmlFor="job-location">
-            Location {values.jobType !== "Remote" ? "*" : ""}
+            Job location
+            {values.jobType !== "Remote" ? (
+              <span className="ms-0.5 text-destructive">*</span>
+            ) : (
+              <span className="ms-1.5 text-xs font-normal text-muted-foreground">
+                Optional for remote roles
+              </span>
+            )}
           </Label>
-          <Input
+          <PlaceAutocompleteInput
             id="job-location"
             value={values.location}
-            onChange={(e) => setField("location", e.target.value)}
-            placeholder="City or area"
+            placeholder="Search city, area or address"
+            onPlacesReady={setPlacesReady}
+            onTextChange={(text) =>
+              // Typing (not picking) invalidates the previously picked coordinates.
+              setValues((prev) => ({ ...prev, location: text, latLng: "" }))
+            }
+            onPlaceSelect={(place) =>
+              setValues((prev) => ({
+                ...prev,
+                location: place.address,
+                latLng:
+                  place.latitude && place.longitude
+                    ? `${place.latitude},${place.longitude}`
+                    : "",
+              }))
+            }
           />
         </div>
         <div className="space-y-2">

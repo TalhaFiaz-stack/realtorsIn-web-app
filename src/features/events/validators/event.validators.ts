@@ -24,7 +24,11 @@ export const eventFormSchema = z
     country: z.string().optional(),
     online_url: z.string().optional(),
     capacity: z.string().optional(),
-    contact_email: z.string().optional(),
+    contact_email: z
+      .string()
+      .trim()
+      .optional()
+      .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Enter a valid contact email"),
     contact_phone: z.string().optional(),
     rem_lead_sync_enabled: z.boolean().optional(),
     rem_campaign_hash: z.string().optional(),
@@ -55,6 +59,23 @@ export const eventFormSchema = z
         message: "Add a venue or city for in-person events",
         path: ["city"],
       });
+    }
+    // Mobile event.validator: hash required when sync is on, 16–128 hex chars.
+    if (data.rem_lead_sync_enabled) {
+      const hash = data.rem_campaign_hash?.trim() ?? "";
+      if (!hash) {
+        ctx.addIssue({
+          code: "custom",
+          message: "REM campaign hash is required when sync is on",
+          path: ["rem_campaign_hash"],
+        });
+      } else if (!/^[a-f0-9]{16,128}$/i.test(hash)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Enter a valid REM campaign hash (from /api/create-lead/...)",
+          path: ["rem_campaign_hash"],
+        });
+      }
     }
     if (needsOnline && !data.online_url?.trim()) {
       ctx.addIssue({

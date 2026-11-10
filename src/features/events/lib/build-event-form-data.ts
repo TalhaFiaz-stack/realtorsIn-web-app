@@ -99,6 +99,8 @@ const CLEARABLE_ON_UPDATE = [
   "latitude",
   "longitude",
   "online_url",
+  "contact_email",
+  "contact_phone",
 ] as const;
 
 export function buildEventFormData(

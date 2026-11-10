@@ -12,7 +12,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useEventMutations } from "@/features/events/hooks/use-event-mutations";
 import type { SocialEvent } from "@/features/events/types/event.types";
