@@ -1,8 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
-import { CheckCircle2, ExternalLink, Share2 } from "lucide-react";
+import { CheckCircle2, Share2 } from "lucide-react";
 import { ContentShareDialog } from "@/components/chat/content-share-dialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -49,15 +48,9 @@ export function EventDetailQuickActions({
     );
   }
 
+  // Dialog already has “View full event page”; avoid a second copy for draft/cancelled.
   if (!event || event.status !== "published") {
-    return (
-      <Button variant="outline" size="default" className="w-full" asChild>
-        <Link href={`/events/${eventId}`}>
-          View full event page
-          <ExternalLink className="ml-1.5 h-3.5 w-3.5" aria-hidden />
-        </Link>
-      </Button>
-    );
+    return null;
   }
 
   const registered = event.viewerRsvp?.status === "going";

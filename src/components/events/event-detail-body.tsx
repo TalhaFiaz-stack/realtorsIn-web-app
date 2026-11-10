@@ -20,6 +20,7 @@ import {
   formatEventSchedule,
   formatVisibilityLabel,
   getEventLocationLabel,
+  isEventCancelled,
 } from "@/features/events/lib/format-event";
 import type { SocialEvent } from "@/features/events/types/event.types";
 import { ProfileImageLightbox } from "@/components/profile/profile-image-lightbox";
@@ -97,6 +98,7 @@ export function EventDetailBody({
   const cover = eventCoverUrl(event);
   const place = getEventLocationLabel(event);
   const when = formatEventSchedule(event.startAt, event.endAt, event.timezone);
+  const cancelled = isEventCancelled(event);
   const hostName =
     [event.host?.name, event.host?.lastName].filter(Boolean).join(" ") ||
     event.host?.userName ||
@@ -150,9 +152,16 @@ export function EventDetailBody({
         )}
       >
         {embedded ? (
-          <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-            {metaLine}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+              {metaLine}
+            </p>
+            {cancelled ? (
+              <span className="rounded-md bg-destructive/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-destructive">
+                Cancelled
+              </span>
+            ) : null}
+          </div>
         ) : (
           <div className="flex flex-wrap items-center gap-2">
             <span className="rounded-md bg-muted px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
@@ -161,7 +170,11 @@ export function EventDetailBody({
             <span className="rounded-md border border-border/80 px-2 py-0.5 text-[11px] font-semibold text-muted-foreground">
               {formatVisibilityLabel(event.visibility)}
             </span>
-            {event.status !== "published" ? (
+            {cancelled ? (
+              <span className="rounded-md bg-destructive/15 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-destructive">
+                Cancelled
+              </span>
+            ) : event.status !== "published" ? (
               <span className="rounded-md bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold capitalize text-amber-800 dark:text-amber-200">
                 {event.status.replace(/_/g, " ")}
               </span>
@@ -200,6 +213,13 @@ export function EventDetailBody({
             </p>
           ) : null}
         </header>
+
+        {!embedded && cancelled && event.cancelNote?.trim() ? (
+          <p className="text-sm leading-relaxed text-muted-foreground" role="status">
+            <span className="font-medium text-foreground">Cancel note: </span>
+            {event.cancelNote.trim()}
+          </p>
+        ) : null}
 
         {embedded ? (
           <div className="divide-y divide-border/80 border-y border-border/80">

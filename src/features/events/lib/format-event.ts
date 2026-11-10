@@ -63,6 +63,16 @@ export function formatVisibilityLabel(visibility: string | null | undefined) {
   return EVENT_VISIBILITY_LABELS[visibility] ?? visibility;
 }
 
+/** True when the host cancelled the event (API uses `cancelled` + `cancelled_at`). */
+export function isEventCancelled(event: Pick<SocialEvent, "status" | "cancelledAt">): boolean {
+  const status = event.status?.toLowerCase() ?? "";
+  return (
+    status === "cancelled" ||
+    status === "canceled" ||
+    Boolean(event.cancelledAt)
+  );
+}
+
 export function eventCoverUrl(event: SocialEvent): string | null {
   if (event.coverImageUrl) return event.coverImageUrl;
   const first = event.images[0]?.imageUrl;
