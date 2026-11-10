@@ -14,6 +14,11 @@ export function useConversationPeerFromCache(
   const queryClient = useQueryClient();
 
   return useMemo(() => {
+    const seeded = queryClient.getQueryData<ChatUser>([
+      "chat",
+      "peer",
+      conversationId,
+    ]);
     const entries = queryClient.getQueriesData<ConversationsPage>({
       queryKey: ["chat", "conversations"],
     });
@@ -21,6 +26,6 @@ export function useConversationPeerFromCache(
       const match = data?.conversations.find((c) => c.id === conversationId);
       if (match) return match.otherUser;
     }
-    return null;
+    return seeded ?? null;
   }, [queryClient, conversationId]);
 }

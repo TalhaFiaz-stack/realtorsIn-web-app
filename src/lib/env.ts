@@ -1,16 +1,11 @@
 import { z } from "zod";
+import { AUTH_COOKIE_NAME } from "@/lib/auth/session-cookie.constants";
 
 const baseSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
   NEXT_PUBLIC_APP_URL: z.string().url().default("http://localhost:3002"),
-  AUTH_COOKIE_NAME: z.string().min(1).default("ri_session"),
-  SESSION_COOKIE_SECURE: z
-    .enum(["true", "false"])
-    .default("false")
-    .transform((v) => v === "true"),
-  SESSION_COOKIE_MAX_AGE: z.coerce.number().int().positive().default(2592000),
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: z.string().optional(),
   NEXT_PUBLIC_FACEBOOK_APP_ID: z.string().optional(),
 });
@@ -40,9 +35,6 @@ function readRawEnv() {
     REM_CRM_API_URL: process.env.REM_CRM_API_URL,
     OFFPLAN_API_URL: process.env.OFFPLAN_API_URL,
     BFF_SHARED_SECRET: process.env.BFF_SHARED_SECRET || undefined,
-    AUTH_COOKIE_NAME: process.env.AUTH_COOKIE_NAME,
-    SESSION_COOKIE_SECURE: process.env.SESSION_COOKIE_SECURE,
-    SESSION_COOKIE_MAX_AGE: process.env.SESSION_COOKIE_MAX_AGE,
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
     NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
   };
@@ -85,7 +77,7 @@ export function getPublicAppUrl(): string {
 }
 
 export function getAuthCookieName(): string {
-  return process.env.AUTH_COOKIE_NAME || "ri_session";
+  return AUTH_COOKIE_NAME;
 }
 
 /**
@@ -96,7 +88,6 @@ export function getAuthCookieName(): string {
 export function isSecureCookieContext(): boolean {
   const env = getBaseEnv();
   return (
-    env.SESSION_COOKIE_SECURE ||
     env.NODE_ENV === "production" ||
     env.NEXT_PUBLIC_APP_URL.startsWith("https://")
   );

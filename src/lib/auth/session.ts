@@ -1,7 +1,8 @@
 import "server-only";
 
 import { cookies } from "next/headers";
-import { getAuthCookieName, getBaseEnv } from "@/lib/env";
+import { getAuthCookieName } from "@/lib/env";
+import { SESSION_COOKIE_MAX_AGE } from "@/lib/auth/session-cookie.constants";
 import { isSecureCookieContext } from "@/lib/env";
 
 export const SESSION_COOKIE_PATH = "/";
@@ -34,14 +35,13 @@ export async function setSessionCookie(token: string): Promise<void> {
     throw new Error("Cannot set empty session token");
   }
 
-  const env = getBaseEnv();
   const jar = await cookies();
   jar.set(getAuthCookieName(), token, {
     httpOnly: true,
     secure: isSecureCookieContext(),
     sameSite: "lax",
     path: SESSION_COOKIE_PATH,
-    maxAge: env.SESSION_COOKIE_MAX_AGE,
+    maxAge: SESSION_COOKIE_MAX_AGE,
   });
 }
 

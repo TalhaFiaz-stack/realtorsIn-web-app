@@ -25,8 +25,13 @@ export function readFirebaseWebConfig(): FirebaseWebConfig | null {
 
 export const FIREBASE_VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ?? "";
 
+/**
+ * The VAPID key is optional: without one the Firebase SDK uses its built-in
+ * default key pair, which works for any project. Set your own (Cloud Messaging →
+ * Web Push certificates) for production.
+ */
 export function isWebPushConfigured(): boolean {
-  return readFirebaseWebConfig() != null && FIREBASE_VAPID_KEY.length > 0;
+  return readFirebaseWebConfig() != null;
 }
 
 /** Pinned to the npm `firebase` version in package.json. */

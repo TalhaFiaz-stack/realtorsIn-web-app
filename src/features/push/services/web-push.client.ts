@@ -93,7 +93,7 @@ export async function syncWebPushToken(): Promise<string> {
     serviceWorker(),
   ]);
   const token = await getToken(messaging, {
-    vapidKey: FIREBASE_VAPID_KEY,
+    ...(FIREBASE_VAPID_KEY ? { vapidKey: FIREBASE_VAPID_KEY } : {}),
     serviceWorkerRegistration: registration,
   });
   if (!token) throw new Error("Browser did not return a push token");

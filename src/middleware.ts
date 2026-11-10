@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { getSafeNextPath } from "@/lib/auth/safe-redirect";
-
-const AUTH_COOKIE = process.env.AUTH_COOKIE_NAME?.trim() || "ri_session";
+import { AUTH_COOKIE_NAME as AUTH_COOKIE } from "@/lib/auth/session-cookie.constants";
 
 const PUBLIC_PREFIXES = [
   "/welcome",
