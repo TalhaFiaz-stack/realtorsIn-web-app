@@ -80,7 +80,9 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
           if (!next) settle(false);
         }}
       >
-        <AlertDialogContent>
+        {/* Above every other layer (story viewer z-[100], sheets z-[110]) —
+            a confirm opened from a full-screen overlay must not hide behind it. */}
+        <AlertDialogContent className="z-[200]" overlayClassName="z-[200]">
           <AlertDialogHeader>
             <AlertDialogTitle>{merged?.title}</AlertDialogTitle>
             {merged?.description ? (

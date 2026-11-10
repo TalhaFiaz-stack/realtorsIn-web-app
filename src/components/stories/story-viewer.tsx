@@ -61,6 +61,10 @@ export function StoryViewer({
   const [paused, setPaused] = useState(false);
   const [mediaLoading, setMediaLoading] = useState(true);
   const [viewersOpen, setViewersOpen] = useState(false);
+  // Delete confirm is open: hold playback and ignore viewer shortcuts.
+  const [confirming, setConfirming] = useState(false);
+  const confirmingRef = useRef(false);
+  confirmingRef.current = confirming;
   // Browsers block autoplay with sound — start muted, let the viewer unmute.
   const [muted, setMuted] = useState(true);
   const holdTimerRef = useRef<number | null>(null);
@@ -140,6 +144,7 @@ export function StoryViewer({
     setPaused(false);
     setMediaLoading(true);
     setViewersOpen(false);
+    setConfirming(false);
     setUserSlideDir(null);
     setUserSliding(false);
     viewedRef.current = new Set();
@@ -167,7 +172,7 @@ export function StoryViewer({
   }, [open, ordered.length, group, story, userIndex, onClose]);
 
   const playbackBlocked =
-    paused || mediaLoading || userSliding || viewersOpen;
+    paused || mediaLoading || userSliding || viewersOpen || confirming;
 
   useEffect(() => {
     setProgress(0);
@@ -240,6 +245,8 @@ export function StoryViewer({
   useEffect(() => {
     if (!open) return;
     function onKey(event: KeyboardEvent) {
+      // The confirm dialog handles its own keys (Escape = cancel).
+      if (confirmingRef.current) return;
       if (event.key === "Escape") onClose();
       if (event.key === "ArrowRight") goNextRef.current();
       if (event.key === "ArrowLeft") goPrev();
@@ -381,9 +388,13 @@ export function StoryViewer({
                           : "Your photo story");
                       // Hold playback while confirming, so the timer can't
                       // move to another story behind the dialog.
-                      setPaused(true);
-                      const ok = await confirm(confirmDeleteStory(preview));
-                      setPaused(false);
+                      setConfirming(true);
+                      let ok = false;
+                      try {
+                        ok = await confirm(confirmDeleteStory(preview));
+                      } finally {
+                        setConfirming(false);
+                      }
                       if (!ok) return;
 
                       const { userIndex: ui, storyIndex: si } = navRef.current;
